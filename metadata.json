@@ -1,0 +1,6 @@
+{
+  "name": "Employee Leave Management System",
+  "description": "A digital portal for employees to request leaves, track balances, and for managers to review, approve, and manage leave records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

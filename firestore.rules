@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isManager() {
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Users Collection Rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.email is string &&
+        request.resource.data.role in ['employee', 'manager'];
+      allow update: if isSignedIn() && (isOwner(userId) || isManager()) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.role in ['employee', 'manager'];
+      allow delete: if false;
+    }
+
+    // Leave Balances Rules
+    match /leave_balances/{balanceId} {
+      allow read: if isSignedIn() && (isOwner(balanceId) || isManager());
+      // A balance ID is typically the user's UID or can be queried.
+      // Allow create/update for the user themselves or a manager.
+      allow create, update: if isSignedIn() && (isOwner(balanceId) || isManager());
+      allow delete: if false;
+    }
+
+    // Leave Requests Rules
+    match /leave_requests/{requestId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.uid) || isManager());
+      allow create: if isSignedIn() && (isOwner(request.resource.data.uid) || isManager());
+      allow update: if isSignedIn() && (isOwner(resource.data.uid) || isManager());
+      allow delete: if false;
+    }
+
+    // Audit Logs Rules
+    match /audit_logs/{logId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    // Notifications Rules
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && isOwner(resource.data.uid);
+      allow create: if isSignedIn(); // Allow creating notifications for other users (system/manager actions)
+      allow update: if isSignedIn() && isOwner(resource.data.uid) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if isSignedIn() && isOwner(resource.data.uid);
+    }
+  }
+}
