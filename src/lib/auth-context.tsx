@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { 
-  onAuthStateChanged, 
   signInWithPopup, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  inMemoryPersistence,
+  setPersistence,
   signOut, 
-  User as FirebaseUser 
 } from "firebase/auth";
 import { auth, googleAuthProvider } from "./firebase.ts";
 import { UserProfile, LeaveBalance } from "../types.ts";
@@ -29,7 +29,6 @@ interface AuthContextType {
   signInWithGoogle: (chosenRole: "employee" | "manager") => Promise<void>;
   signInWithEmail: (email: string, password: string, chosenRole: "employee" | "manager") => Promise<void>;
   signUpWithEmail: (details: SignUpDetails) => Promise<void>;
-  signInAsDemo: (uid: string, chosenRole: "employee" | "manager") => Promise<void>;
   logout: () => Promise<void>;
   updateRoleAndProfile: (updates: { name?: string; department?: string; title?: string }) => Promise<void>;
   refreshProfile: (activeToken?: string, chosenRole?: "employee" | "manager") => Promise<void>;
@@ -38,7 +37,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [balances, setBalances] = useState<LeaveBalance | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -121,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setAuthError(null);
       localStorage.setItem("portal_role", chosenRole);
+      await setPersistence(auth, inMemoryPersistence);
       
       const result = await signInWithPopup(auth, googleAuthProvider);
       const userToken = result.user.uid;
@@ -146,28 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Please enter both your email address and password.");
       }
 
-      // 1. Check pre-seeded demo users by email
-      const demoEmailMap: { [key: string]: { uid: string; role: "employee" | "manager" } } = {
-        "alice@enterprise.com": { uid: "demo-alice", role: "employee" },
-        "bob@enterprise.com": { uid: "demo-bob", role: "employee" },
-        "diana@enterprise.com": { uid: "demo-diana", role: "manager" }
-      };
-
-      if (demoEmailMap[cleanEmail]) {
-        const demo = demoEmailMap[cleanEmail];
-        if (demo.role !== chosenRole) {
-          throw new Error(
-            `This demo account is an ${demo.role === "manager" ? "HR Admin" : "Employee"}. Please switch to the ${demo.role === "manager" ? "HR & Operations Admin" : "Employee Portal"} tab.`
-          );
-        }
-        localStorage.setItem("portal_role", chosenRole);
-        localStorage.setItem("demo_user_uid", demo.uid);
-        setToken(demo.uid);
-        await refreshProfile(demo.uid, chosenRole);
-        return;
-      }
-
-      // 2. Try Firebase Auth (Cloud)
+      await setPersistence(auth, inMemoryPersistence);
       try {
         const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
         const userToken = userCredential.user.uid;
@@ -211,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!details.department) throw new Error("Please select your department.");
       if (!details.title) throw new Error("Please provide your job title.");
 
+      await setPersistence(auth, inMemoryPersistence);
       const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, details.password);
       const uid = userCredential.user.uid;
 
@@ -237,23 +216,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("Sign up error:", err);
       setAuthError(err.message || "Failed to create account.");
       throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign in using demo profile
-  const signInAsDemo = async (uid: string, chosenRole: "employee" | "manager") => {
-    try {
-      setLoading(true);
-      setAuthError(null);
-      localStorage.setItem("portal_role", chosenRole);
-      localStorage.setItem("demo_user_uid", uid);
-      setToken(uid);
-      await refreshProfile(uid, chosenRole);
-    } catch (error: any) {
-      console.error("Demo sign in error", error);
-      setAuthError(error.message || "Demo sign in failed.");
     } finally {
       setLoading(false);
     }
@@ -290,38 +252,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Initialize Auth state
+  // Always start at sign-in and remove data left by previous demo builds.
   useEffect(() => {
-    // Remove credentials persisted by older demo builds.
-    localStorage.removeItem("local_registered_users");
-    // 1. Check if there was a saved demo/local login
-    const savedDemoUid = localStorage.getItem("demo_user_uid");
-    const savedRole = localStorage.getItem("portal_role") as "employee" | "manager";
-    if (savedDemoUid && savedRole) {
-      setToken(savedDemoUid);
-      refreshProfile(savedDemoUid, savedRole).then(() => {
-        setLoading(false);
-      }).catch(() => {
-        setLoading(false);
-      });
-      return;
+    for (const key of Object.keys(localStorage)) {
+      if (
+        key === "portal_role" ||
+        key === "demo_user_uid" ||
+        key === "local_registered_users" ||
+        key.startsWith("demo_")
+      ) {
+        localStorage.removeItem(key);
+      }
     }
-
-    // 2. Fallback to real Firebase Auth listener
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
-      if (user) {
-        const userToken = user.uid;
-        setToken(userToken);
-      } else {
+    setPersistence(auth, inMemoryPersistence)
+      .then(() => signOut(auth))
+      .catch((error) => console.error("Failed to clear the previous session", error))
+      .finally(() => {
         setToken(null);
         setUser(null);
         setBalances(null);
         setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
+      });
   }, []);
 
   // Set up auto-refresh profile if token changes
@@ -351,7 +302,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
-        signInAsDemo,
         logout,
         updateRoleAndProfile,
         refreshProfile,
@@ -372,4 +322,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
 
