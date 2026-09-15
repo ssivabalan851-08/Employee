@@ -51,16 +51,9 @@ const MainLayout: React.FC = () => {
             {/* Profile & Notifications */}
             <div className="flex items-center space-x-4">
               
-              {/* Dynamic Environment Mode Badge */}
-              <div className={`hidden md:inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm ${
-                token?.startsWith("demo-")
-                  ? "bg-amber-50/60 text-amber-800 border-amber-100"
-                  : "bg-emerald-50/60 text-emerald-800 border-emerald-100"
-              }`}>
-                <span className={`h-1.5 w-1.5 rounded-full mr-1.5 animate-pulse ${
-                  token?.startsWith("demo-") ? "bg-amber-500" : "bg-emerald-500"
-                }`} />
-                {token?.startsWith("demo-") ? "Demo Environment 🧪" : "Cloud Database ☁️"}
+              <div className="hidden md:inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm bg-emerald-50/60 text-emerald-800 border-emerald-100">
+                <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-emerald-500" />
+                Cloud Database
               </div>
 
               {/* In-app Notification center */}

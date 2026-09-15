@@ -13,11 +13,7 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
-  Sparkles,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle2,
-  ArrowRight
+  CheckCircle2
 } from "lucide-react";
 
 export const LoginScreen: React.FC = () => {
@@ -25,7 +21,6 @@ export const LoginScreen: React.FC = () => {
     signInWithGoogle, 
     signInWithEmail, 
     signUpWithEmail, 
-    signInAsDemo, 
     authError, 
     clearAuthError 
   } = useAuth();
@@ -40,7 +35,6 @@ export const LoginScreen: React.FC = () => {
   const [signInEmail, setSignInEmail] = useState("");
   const [signInPassword, setSignInPassword] = useState("");
   const [showSignInPassword, setShowSignInPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
 
   // Create Account Form States
   const [signUpName, setSignUpName] = useState("");
@@ -52,9 +46,6 @@ export const LoginScreen: React.FC = () => {
 
   // Loading state
   const [submitting, setSubmitting] = useState(false);
-
-  // Demo tray expansion
-  const [isDemoTrayOpen, setIsDemoTrayOpen] = useState(false);
 
   const handleRoleChange = (newRole: "employee" | "manager") => {
     clearAuthError();
@@ -104,41 +95,6 @@ export const LoginScreen: React.FC = () => {
       setSubmitting(false);
     }
   };
-
-  const demoProfiles = [
-    {
-      uid: "demo-alice",
-      email: "alice@enterprise.com",
-      name: "Alice Johnson",
-      role: "employee",
-      department: "Engineering",
-      title: "Software Engineer",
-      avatarBg: "bg-indigo-100 text-indigo-700 border border-indigo-200",
-      description: "Request standard leave types, check accrued balances, and manage personal schedules."
-    },
-    {
-      uid: "demo-bob",
-      email: "bob@enterprise.com",
-      name: "Bob Smith",
-      role: "employee",
-      department: "Marketing",
-      title: "SEO Specialist",
-      avatarBg: "bg-sky-100 text-sky-700 border border-sky-200",
-      description: "Test overdraft alerts, view real-time calculations, and track requests."
-    },
-    {
-      uid: "demo-diana",
-      email: "diana@enterprise.com",
-      name: "Diana Prince",
-      role: "manager",
-      department: "Human Resources",
-      title: "HR Director",
-      avatarBg: "bg-slate-900 text-slate-100 border border-slate-700",
-      description: "Review pending applications, adjust staff quotas, and download CSV compliance reports."
-    }
-  ];
-
-  const filteredDemoProfiles = demoProfiles.filter(p => p.role === activeRole);
 
   const departmentsList = [
     "Engineering",
@@ -360,20 +316,6 @@ export const LoginScreen: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Remember Me */}
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-slate-900 focus:ring-slate-900 border-slate-300 rounded cursor-pointer"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-xs text-slate-600 font-medium cursor-pointer">
-                    Remember my corporate gateway session
-                  </label>
-                </div>
-
                 {/* Submit Sign In Button */}
                 <button
                   type="submit"
@@ -571,71 +513,11 @@ export const LoginScreen: React.FC = () => {
               Sign in with Corporate Google Account
             </button>
 
-            {/* QUICK DEMO / EVALUATOR SANDBOX DRAWER */}
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => setIsDemoTrayOpen(!isDemoTrayOpen)}
-                className="w-full flex items-center justify-between text-left group focus:outline-none"
-              >
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs font-bold text-slate-800 group-hover:text-slate-950">
-                    Instant Evaluator Demo Access
-                  </span>
-                  <span className="px-2 py-0.5 text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200/50 rounded-full">
-                    Pre-Seeded Sandbox
-                  </span>
-                </div>
-                <div className="text-slate-400 group-hover:text-slate-600">
-                  {isDemoTrayOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                </div>
-              </button>
-
-              {isDemoTrayOpen && (
-                <div className="mt-3 space-y-2.5 animate-in fade-in duration-200">
-                  <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                    Click any pre-configured profile below to log in immediately with mock balances and sample history:
-                  </p>
-                  
-                  <div className="grid grid-cols-1 gap-2.5">
-                    {filteredDemoProfiles.map((profile) => (
-                      <div
-                        key={profile.uid}
-                        onClick={() => signInAsDemo(profile.uid, activeRole)}
-                        className="p-3 border border-slate-200/80 hover:border-slate-400 rounded-xl bg-slate-50/60 hover:bg-white cursor-pointer hover:shadow-sm transition-all duration-150 flex items-start space-x-3 group"
-                      >
-                        <div className={`flex-shrink-0 h-9 w-9 rounded-lg font-bold text-xs flex items-center justify-center ${profile.avatarBg}`}>
-                          {profile.name.charAt(0)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-slate-900 group-hover:text-slate-950 truncate">
-                              {profile.name}
-                            </span>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                              1-Click Log In
-                            </span>
-                          </div>
-                          <span className="text-[10px] text-slate-500 font-bold block truncate">
-                            {profile.title} • {profile.department}
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-medium block truncate mt-0.5">
-                            {profile.description}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
 
           {/* Footer note */}
           <div className="py-3 px-6 bg-slate-50 border-t border-slate-100 text-center text-[10px] font-semibold text-slate-400">
-            Enterprise Grade Security • AES-256 Cloud Tokenization • ISO-27001 Compliant
+            Firebase Authentication • Role-Based Access • Secure Session Reset
           </div>
 
         </div>
