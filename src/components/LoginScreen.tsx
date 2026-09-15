@@ -95,7 +95,6 @@ export const LoginScreen: React.FC = () => {
         email: signUpEmail,
         password: signUpPassword,
         name: signUpName,
-        role: activeRole,
         department: signUpDepartment,
         title: signUpTitle
       });
@@ -274,7 +273,10 @@ export const LoginScreen: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => handleAuthModeChange("signup")}
+                onClick={() => {
+                  handleRoleChange("employee");
+                  handleAuthModeChange("signup");
+                }}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-1.5 ${
                   authMode === "signup"
                     ? "bg-white text-slate-900 shadow-sm"
@@ -292,13 +294,13 @@ export const LoginScreen: React.FC = () => {
                 {authMode === "signin" ? (
                   activeRole === "manager" ? "Sign in to HR Administration" : "Sign in to Employee Portal"
                 ) : (
-                  activeRole === "manager" ? "Register New HR Admin Profile" : "Create New Employee Account"
+                  "Create New Employee Account"
                 )}
               </h2>
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {authMode === "signin"
                   ? `Enter your corporate credentials to access the ${activeRole === "manager" ? "HR manager" : "employee"} workspace.`
-                  : `Set up your profile to request leaves and track allowances as an ${activeRole === "manager" ? "HR administrator" : "employee"}.`}
+                  : "New accounts receive employee access. An administrator must grant manager access."}
               </p>
             </div>
 
@@ -642,3 +644,4 @@ export const LoginScreen: React.FC = () => {
     </div>
   );
 };
+

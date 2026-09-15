@@ -67,13 +67,22 @@
         "endDate": { "type": "string", "description": "YYYY-MM-DD" },
         "totalDays": { "type": "integer" },
         "reason": { "type": "string" },
-        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "cancellation_pending", "cancelled", "withdrawn"] },
+        "employeeId": { "type": "string", "description": "Canonical applicant User ID" },
+        "duration": { "type": "integer", "description": "Business-day duration" },
+        "applicationDate": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "cancellationRequestedAt": { "type": "string", "format": "date-time" },
+        "cancellationReason": { "type": "string" },
+        "cancelledAt": { "type": "string", "format": "date-time" },
+        "approvedAt": { "type": "string", "format": "date-time" },
+        "rejectedAt": { "type": "string", "format": "date-time" },
         "managerComment": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "processedAt": { "type": "string", "format": "date-time" },
         "processedBy": { "type": "string", "description": "UID of the processing manager" }
       },
-      "required": ["uid", "leaveType", "startDate", "endDate", "totalDays", "status"]
+      "required": ["uid", "employeeId", "leaveType", "startDate", "endDate", "duration", "totalDays", "status", "applicationDate", "createdAt", "updatedAt"]
     },
     "Notification": {
       "title": "Notification",
@@ -88,6 +97,25 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "title", "message", "status", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Append-only leave workflow event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "leaveId": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorName": { "type": "string" },
+        "actorRole": { "type": "string", "enum": ["employee", "hr"] },
+        "action": { "type": "string", "enum": ["leave_submitted", "leave_approved", "leave_rejected", "leave_cancellation_requested", "leave_cancelled"] },
+        "previousStatus": { "type": "string" },
+        "newStatus": { "type": "string" },
+        "reason": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "leaveId", "actorId", "actorRole", "action", "timestamp"]
     }
   },
   "firestore": {
@@ -106,6 +134,11 @@
     "/notifications/{notificationId}": {
       "schema": "Notification",
       "description": "In-app notifications"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Append-only workflow history"
     }
   }
 }
+

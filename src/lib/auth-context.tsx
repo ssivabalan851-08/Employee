@@ -15,7 +15,6 @@ export interface SignUpDetails {
   email: string;
   password: string;
   name: string;
-  role: "employee" | "manager";
   department: string;
   title: string;
 }
@@ -32,7 +31,7 @@ interface AuthContextType {
   signUpWithEmail: (details: SignUpDetails) => Promise<void>;
   signInAsDemo: (uid: string, chosenRole: "employee" | "manager") => Promise<void>;
   logout: () => Promise<void>;
-  updateRoleAndProfile: (updates: { role?: "employee" | "manager"; name?: string; department?: string; title?: string }) => Promise<void>;
+  updateRoleAndProfile: (updates: { name?: string; department?: string; title?: string }) => Promise<void>;
   refreshProfile: (activeToken?: string, chosenRole?: "employee" | "manager") => Promise<void>;
 }
 
@@ -59,7 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const activeUser = auth.currentUser;
       const emailFromAuth = activeUser?.email || undefined;
       const nameFromAuth = activeUser?.displayName || undefined;
-      const effectiveRole = chosenRole || (localStorage.getItem("portal_role") as "employee" | "manager") || undefined;
+      const requestedRole = chosenRole || (localStorage.getItem("portal_role") as "employee" | "manager") || undefined;
+      let effectiveRole = requestedRole;
+
+      if (activeUser && !IS_DEMO_SESSION(bearerToken)) {
+        const tokenResult = await activeUser.getIdTokenResult();
+        const authorizedRole = tokenResult.claims.manager === true ? "manager" : "employee";
+        if (requestedRole && requestedRole !== authorizedRole) {
+          throw new Error(
+            authorizedRole === "manager"
+              ? "This account has manager access. Use the HR & Admin Portal."
+              : "This account has employee access. Manager access must be granted by an administrator."
+          );
+        }
+        effectiveRole = authorizedRole;
+      }
       
       const fetchPromise = DbService.getProfileAndBalances(bearerToken, emailFromAuth, nameFromAuth, effectiveRole);
       const timeoutPromise = new Promise<never>((_, reject) => 
@@ -122,7 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Sign in with Email and Password (supports both local registered accounts and cloud Firebase)
+  // Sign in with Email and Password. Passwords are handled only by Firebase Auth.
   const signInWithEmail = async (email: string, password: string, chosenRole: "employee" | "manager") => {
     try {
       setLoading(true);
@@ -133,27 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Please enter both your email address and password.");
       }
 
-      // 1. Check local registered sandbox users
-      const localRegistered = JSON.parse(localStorage.getItem("local_registered_users") || "[]");
-      const localMatch = localRegistered.find((u: any) => u.email.toLowerCase() === cleanEmail);
-
-      if (localMatch) {
-        if (localMatch.password !== password) {
-          throw new Error("Incorrect password. Please verify your credentials.");
-        }
-        if (localMatch.role !== chosenRole) {
-          throw new Error(
-            `This account is registered as ${localMatch.role === "manager" ? "HR Admin" : "an Employee"}. Please switch to the ${localMatch.role === "manager" ? "HR & Operations Admin" : "Employee Portal"} tab.`
-          );
-        }
-        localStorage.setItem("portal_role", chosenRole);
-        localStorage.setItem("demo_user_uid", localMatch.uid);
-        setToken(localMatch.uid);
-        await refreshProfile(localMatch.uid, chosenRole);
-        return;
-      }
-
-      // 2. Check pre-seeded demo users by email
+      // 1. Check pre-seeded demo users by email
       const demoEmailMap: { [key: string]: { uid: string; role: "employee" | "manager" } } = {
         "alice@enterprise.com": { uid: "demo-alice", role: "employee" },
         "bob@enterprise.com": { uid: "demo-bob", role: "employee" },
@@ -174,7 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // 3. Try Firebase Auth (Cloud)
+      // 2. Try Firebase Auth (Cloud)
       try {
         const userCredential = await signInWithEmailAndPassword(auth, cleanEmail, password);
         const userToken = userCredential.user.uid;
@@ -188,7 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error("Invalid email or password. Please check your credentials or create a new account.");
         }
         if (fbErr.code === "auth/operation-not-allowed") {
-          throw new Error("Email/password sign-in is disabled in Firebase. You can create an account in Sandbox mode or use Google sign-in.");
+          throw new Error("Email/password sign-in is disabled in Firebase. Ask an administrator to enable it or use Google sign-in.");
         }
         throw new Error(fbErr.message || "Sign in failed. Please verify your credentials.");
       }
@@ -218,34 +211,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!details.department) throw new Error("Please select your department.");
       if (!details.title) throw new Error("Please provide your job title.");
 
-      // Check if email already registered locally
-      const localRegistered = JSON.parse(localStorage.getItem("local_registered_users") || "[]");
-      if (localRegistered.some((u: any) => u.email.toLowerCase() === cleanEmail)) {
-        throw new Error("An account with this email address already exists. Please sign in instead.");
-      }
-
-      let uid: string;
-      let isCloudUser = false;
-
-      // Try Firebase signup first
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, details.password);
-        uid = userCredential.user.uid;
-        isCloudUser = true;
-      } catch (fbErr: any) {
-        console.warn("Firebase createUser failed, continuing with local registered profile:", fbErr.code, fbErr.message);
-        if (fbErr.code === "auth/email-already-in-use") {
-          throw new Error("An account with this email address already exists in Cloud Auth. Please sign in instead.");
-        }
-        // Graceful fallback to sandbox account ID
-        uid = "local-" + Math.random().toString(36).substring(2, 10);
-      }
+      const userCredential = await createUserWithEmailAndPassword(auth, cleanEmail, details.password);
+      const uid = userCredential.user.uid;
 
       const newProfile: UserProfile = {
         uid,
         email: cleanEmail,
         name: cleanName,
-        role: details.role,
+        role: "employee",
         department: details.department,
         title: details.title,
         joinedDate: new Date().toISOString().split("T")[0],
@@ -255,20 +228,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Register profile and leave balances in DbService
       await DbService.registerUserProfile(newProfile);
 
-      // Save credentials locally for seamless re-login
-      localRegistered.push({
-        ...details,
-        email: cleanEmail,
-        uid
-      });
-      localStorage.setItem("local_registered_users", JSON.stringify(localRegistered));
-
-      localStorage.setItem("portal_role", details.role);
-      if (!isCloudUser) {
-        localStorage.setItem("demo_user_uid", uid);
-      }
+      localStorage.removeItem("local_registered_users");
+      localStorage.setItem("portal_role", "employee");
+      localStorage.removeItem("demo_user_uid");
       setToken(uid);
-      await refreshProfile(uid, details.role);
+      await refreshProfile(uid, "employee");
     } catch (err: any) {
       console.error("Sign up error:", err);
       setAuthError(err.message || "Failed to create account.");
@@ -313,8 +277,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Update role/profile details dynamically (helps with switching views/roles easily)
-  const updateRoleAndProfile = async (updates: { role?: "employee" | "manager"; name?: string; department?: string; title?: string }) => {
+  // Update editable profile details. Roles are administrator-managed.
+  const updateRoleAndProfile = async (updates: { name?: string; department?: string; title?: string }) => {
     const activeToken = token;
     if (!activeToken) return;
 
@@ -328,6 +292,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize Auth state
   useEffect(() => {
+    // Remove credentials persisted by older demo builds.
+    localStorage.removeItem("local_registered_users");
     // 1. Check if there was a saved demo/local login
     const savedDemoUid = localStorage.getItem("demo_user_uid");
     const savedRole = localStorage.getItem("portal_role") as "employee" | "manager";
@@ -396,6 +362,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+const IS_DEMO_SESSION = (value: string) =>
+  value.startsWith("demo-") || value.startsWith("local-");
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -403,3 +372,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
