@@ -17,58 +17,100 @@ service cloud.firestore {
     }
 
     function isManager() {
-      return isSignedIn() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'manager';
+      return isSignedIn() && request.auth.token.manager == true;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    function hasOnlyChanged(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function validLeaveType(value) {
+      return value in ['annual', 'sick', 'casual', 'parental'];
+    }
+
+    function validEmployeeRequestCreate() {
+      return isOwner(request.resource.data.uid) &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        validLeaveType(request.resource.data.leaveType) &&
+        request.resource.data.totalDays is int &&
+        request.resource.data.totalDays > 0 &&
+        request.resource.data.duration == request.resource.data.totalDays &&
+        request.resource.data.reason is string &&
+        request.resource.data.reason.size() >= 3 &&
+        request.resource.data.reason.size() <= 1000;
+    }
+
+    function validEmployeeRequestUpdate() {
+      return isOwner(resource.data.uid) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.employeeId == resource.data.employeeId &&
+        (
+          (resource.data.status == 'pending' &&
+            request.resource.data.status in ['cancelled', 'withdrawn'] &&
+            hasOnlyChanged(['status', 'updatedAt', 'cancelledAt', 'cancellationReason'])) ||
+          (resource.data.status == 'approved' &&
+            request.resource.data.status == 'cancellation_pending' &&
+            hasOnlyChanged(['status', 'updatedAt', 'cancellationRequestedAt', 'cancellationReason']))
+        );
     }
 
     // Users Collection Rules
     match /users/{userId} {
-      allow read: if isSignedIn();
+      allow read: if isOwner(userId) || isManager();
       allow create: if isSignedIn() && isOwner(userId) &&
         request.resource.data.uid == userId &&
         request.resource.data.email is string &&
-        request.resource.data.role in ['employee', 'manager'];
-      allow update: if isSignedIn() && (isOwner(userId) || isManager()) &&
+        request.resource.data.role == 'employee';
+      allow update: if isOwner(userId) &&
         request.resource.data.uid == userId &&
-        request.resource.data.role in ['employee', 'manager'];
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.role == resource.data.role &&
+        hasOnlyChanged(['name', 'department', 'title']);
       allow delete: if false;
     }
 
     // Leave Balances Rules
     match /leave_balances/{balanceId} {
       allow read: if isSignedIn() && (isOwner(balanceId) || isManager());
-      // A balance ID is typically the user's UID or can be queried.
-      // Allow create/update for the user themselves or a manager.
-      allow create, update: if isSignedIn() && (isOwner(balanceId) || isManager());
+      allow create: if isOwner(balanceId) &&
+        request.resource.data.uid == balanceId &&
+        request.resource.data.annual == { total: 20, used: 0 } &&
+        request.resource.data.sick == { total: 10, used: 0 } &&
+        request.resource.data.casual == { total: 7, used: 0 } &&
+        request.resource.data.parental == { total: 30, used: 0 };
+      allow update: if isManager() &&
+        request.resource.data.uid == resource.data.uid;
       allow delete: if false;
     }
 
     // Leave Requests Rules
     match /leave_requests/{requestId} {
       allow read: if isSignedIn() && (isOwner(resource.data.uid) || isManager());
-      allow create: if isSignedIn() && (isOwner(request.resource.data.uid) || isManager());
-      allow update: if isSignedIn() && (isOwner(resource.data.uid) || isManager());
+      allow create: if isSignedIn() && validEmployeeRequestCreate();
+      allow update: if isSignedIn() && (isManager() || validEmployeeRequestUpdate());
       allow delete: if false;
     }
 
     // Audit Logs Rules
     match /audit_logs/{logId} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
+      allow read: if isSignedIn() &&
+        (resource.data.employeeId == request.auth.uid || isManager());
+      allow create: if isSignedIn() &&
+        request.resource.data.actorId == request.auth.uid &&
+        (request.resource.data.employeeId == request.auth.uid || isManager());
       allow update, delete: if false;
     }
 
     // Notifications Rules
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && isOwner(resource.data.uid);
-      allow create: if isSignedIn(); // Allow creating notifications for other users (system/manager actions)
+      allow create: if isSignedIn() &&
+        (request.resource.data.uid == request.auth.uid || isManager());
       allow update: if isSignedIn() && isOwner(resource.data.uid) &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow delete: if isSignedIn() && isOwner(resource.data.uid);
     }
   }
 }
+

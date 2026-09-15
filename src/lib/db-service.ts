@@ -468,10 +468,9 @@ export const DbService = {
         let balance = balanceDoc.exists() ? (balanceDoc.data() as LeaveBalance) : null;
         
         if (user && chosenRole && user.role !== chosenRole) {
-          user.role = chosenRole;
-          user.department = chosenRole === "manager" ? "Human Resources" : "Engineering";
-          user.title = chosenRole === "manager" ? "HR Specialist" : "Team Member";
-          await setDoc(userDocRef, user);
+          throw new Error(
+            `This account is registered as ${user.role === "manager" ? "HR" : "an Employee"}. You cannot sign in under the ${chosenRole === "manager" ? "HR" : "Employee"} portal.`
+          );
         }
 
         if (!user) {
@@ -481,9 +480,9 @@ export const DbService = {
             uid: token,
             email,
             name,
-            role: chosenRole || "employee",
-            department: chosenRole === "manager" ? "Human Resources" : "Engineering",
-            title: chosenRole === "manager" ? "HR Specialist" : "Team Member",
+            role: "employee",
+            department: "Engineering",
+            title: "Team Member",
             joinedDate: new Date().toISOString().split("T")[0],
             createdAt: new Date().toISOString()
           };
@@ -511,8 +510,8 @@ export const DbService = {
     }
   },
 
-  // 2. Update user profile / roles
-  async updateProfile(token: string, updates: { role?: "employee" | "manager"; name?: string; department?: string; title?: string }) {
+  // 2. Update editable profile fields. Roles are administrator-managed.
+  async updateProfile(token: string, updates: { name?: string; department?: string; title?: string }) {
     if (IS_DEMO_TOKEN(token)) {
       const users = getLocal("demo_users", INITIAL_DEMO_USERS);
       const idx = users.findIndex(u => u.uid === token);
@@ -588,7 +587,9 @@ export const DbService = {
       return getLocal("demo_audit_logs", []);
     } else {
       try {
-        const snap = await getDocs(collection(db, "audit_logs"));
+        const snap = await getDocs(
+          query(collection(db, "audit_logs"), where("employeeId", "==", token))
+        );
         const results: AuditLog[] = [];
         snap.forEach(doc => {
           results.push(doc.data() as AuditLog);
@@ -1874,3 +1875,4 @@ export const DbService = {
     }
   }
 };
+

@@ -1,25 +1,28 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { AuthProvider, useAuth } from "./lib/auth-context.tsx";
-import { LoginScreen } from "./components/LoginScreen.tsx";
-import { EmployeeDashboard } from "./components/EmployeeDashboard.tsx";
-import { ManagerDashboard } from "./components/ManagerDashboard.tsx";
 import { NotificationCenter } from "./components/NotificationCenter.tsx";
-import { CalendarDays, LogOut, ShieldAlert, Award, User, Layers } from "lucide-react";
+import { CalendarDays, LogOut } from "lucide-react";
+
+const LoginScreen = lazy(() => import("./components/LoginScreen.tsx").then(module => ({ default: module.LoginScreen })));
+const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx").then(module => ({ default: module.EmployeeDashboard })));
+const ManagerDashboard = lazy(() => import("./components/ManagerDashboard.tsx").then(module => ({ default: module.ManagerDashboard })));
+
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+    <div className="text-center space-y-4">
+      <div className="animate-pulse h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white mx-auto">
+        <CalendarDays className="h-5 w-5 animate-spin text-slate-200" />
+      </div>
+      <p className="text-xs font-semibold text-slate-500 tracking-wide">Loading secure workspace...</p>
+    </div>
+  </div>
+);
 
 const MainLayout: React.FC = () => {
-  const { user, token, loading, logout, updateRoleAndProfile } = useAuth();
+  const { user, token, loading, logout } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-pulse h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-lg mx-auto shadow-sm">
-            <CalendarDays className="h-5 w-5 animate-spin text-slate-200" />
-          </div>
-          <p className="text-xs font-semibold text-slate-500 tracking-wide">Syncing corporate credentials...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!token || !user) {
@@ -110,7 +113,10 @@ const MainLayout: React.FC = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <MainLayout />
+      <Suspense fallback={<LoadingScreen />}>
+        <MainLayout />
+      </Suspense>
     </AuthProvider>
   );
 }
+
