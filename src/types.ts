@@ -9,6 +9,8 @@ export interface UserProfile {
   title: string;
   joinedDate: string;
   createdAt: string;
+  requestedRole?: UserRole;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface LeaveCategory {

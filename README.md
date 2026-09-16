@@ -16,7 +16,7 @@ The application deliberately starts signed out on every page visit. It does not 
 ## Local setup
 
 1. Create a Supabase project.
-2. Open the Supabase SQL editor and run `supabase/migrations/202609150001_initial_schema.sql`.
+2. Open the Supabase SQL editor and run the files in `supabase/migrations` in timestamp order.
 3. Copy `.env.example` to `.env.local` and add the project URL and publishable key.
 4. In Supabase Authentication URL Configuration, set the production Site URL and add the local development URL when needed.
 5. Enable Email authentication. Enable Google only after adding its client ID and secret in Supabase.
@@ -29,17 +29,11 @@ npm run dev
 
 The local app starts at `http://localhost:3001`.
 
-## Manager access
+## Account approval
 
-New accounts always start as employees. After the intended manager has registered, grant access from the Supabase SQL editor:
+New employee and HR accounts start in a pending state. LeaveWise emails the configured administrator a review link, and the applicant receives the final approval or rejection by email. HR access is assigned only when an HR request is approved.
 
-```sql
-update public.profiles
-set role = 'manager'
-where email = 'manager@company.com';
-```
-
-See `docs/MANAGER_PROVISIONING.md` for operational guidance.
+Follow [docs/ACCOUNT_APPROVAL_SETUP.md](docs/ACCOUNT_APPROVAL_SETUP.md) to configure the mail sender, deploy the Edge Function, and activate the database migration.
 
 ## Commands
 

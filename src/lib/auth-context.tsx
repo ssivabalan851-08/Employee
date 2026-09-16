@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { LeaveBalance, UserProfile } from "../types.ts";
 import { DbService } from "./db-service.ts";
 import { supabaseAuth, SupabaseAuthUser } from "./supabase.ts";
+import { accountEmailHelp, isAllowedAccountEmail } from "./email-validation.ts";
 
 export interface SignUpDetails { email: string; password: string; name: string; department: string; title: string; requestedRole: "employee" | "manager"; }
 
@@ -53,9 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithEmail = async (email: string, password: string, role: "employee" | "manager") => {
     setLoading(true); setAuthError(null); setAuthNotice(null);
     try {
-      const authUser = await supabaseAuth.signInWithPassword(email.trim().toLowerCase(), password);
+      const cleanEmail = email.trim().toLowerCase();
+      if (!isAllowedAccountEmail(cleanEmail)) throw new Error(accountEmailHelp);
+      const authUser = await supabaseAuth.signInWithPassword(cleanEmail, password);
       await beginSession(authUser, role);
     } catch (error: any) {
+      await supabaseAuth.signOut().catch(() => undefined);
+      setToken(null); setUser(null); setBalances(null);
       const message = /email not confirmed/i.test(error.message)
         ? "Your account exists, but the email address is not confirmed. Open the Supabase confirmation email, confirm the account, then sign in again."
         : /invalid login credentials/i.test(error.message)
@@ -71,22 +76,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const email = details.email.trim().toLowerCase();
       const name = details.name.trim();
       if (!name || !email || details.password.length < 6) throw new Error("Enter your name, work email, and a password of at least 6 characters.");
+      if (!isAllowedAccountEmail(email)) throw new Error(accountEmailHelp);
       const result = await supabaseAuth.signUp(email, details.password, {
         full_name: name,
         department: details.department,
         title: details.title,
         requested_role: details.requestedRole,
       });
-      if (!result.hasSession) {
-        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account was created. Confirm your email${details.requestedRole === "manager" ? " and wait for administrator approval" : ""}, then sign in.`);
-        return;
-      }
-      if (details.requestedRole === "manager") {
-        await supabaseAuth.signOut();
-        setAuthNotice("Your HR account request was created. An administrator must grant HR access before you can sign in to the HR portal.");
-        return;
-      }
-      await beginSession(result.user, "employee");
+      await supabaseAuth.requestAccountApproval(result.user.id);
+      if (result.hasSession) await supabaseAuth.signOut();
+      setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. Confirm your email and wait for the approval decision email before signing in.`);
     } catch (error: any) {
       const message = /already (been )?registered|already exists|email.*in use/i.test(error.message)
         ? "An account already exists for this email. Choose Sign In or use another email."

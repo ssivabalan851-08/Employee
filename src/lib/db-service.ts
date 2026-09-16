@@ -23,7 +23,18 @@ export function calculateBusinessDays(startDateStr: string, endDateStr: string) 
   return count;
 }
 
-const profileFromRow = (r: any): UserProfile => ({ uid: r.id, email: r.email, name: r.name, role: r.role, department: r.department, title: r.title, joinedDate: r.joined_date, createdAt: r.created_at });
+const profileFromRow = (r: any): UserProfile => ({
+  uid: r.id,
+  email: r.email,
+  name: r.name,
+  role: r.role,
+  department: r.department,
+  title: r.title,
+  joinedDate: r.joined_date,
+  createdAt: r.created_at,
+  requestedRole: r.requested_role,
+  approvalStatus: r.approval_status,
+});
 const balanceFromRow = (r: any): LeaveBalance => ({
   uid: r.user_id,
   annual: { total: r.annual_total, used: r.annual_used },
@@ -79,6 +90,12 @@ export const DbService = {
       balanceRow = rows[0];
     }
     const user = profileFromRow(profileRow);
+    if (user.approvalStatus === "pending") {
+      throw new Error("Your account request is waiting for administrator approval. We will email you as soon as a decision is made.");
+    }
+    if (user.approvalStatus === "rejected") {
+      throw new Error("This account request was not approved. Contact LeaveWise support if you need clarification.");
+    }
     if (chosenRole && user.role !== chosenRole) {
       throw new Error(user.role === "manager" ? "This account has manager access. Use the HR & Admin Portal." : "This account has employee access. Manager access must be granted by an administrator.");
     }
