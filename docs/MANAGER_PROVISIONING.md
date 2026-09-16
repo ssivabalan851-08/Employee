@@ -1,21 +1,18 @@
 # Manager provisioning
 
-Manager access is privileged. The public registration form always creates an employee account.
+Public registration creates employee accounts only. Manager access must be granted by an authorized Supabase project administrator.
 
-## Prerequisites
+1. Ask the manager to create an account through the Employee portal and confirm their email.
+2. In the Supabase dashboard, open **SQL Editor**.
+3. Run the following statement with the manager's exact verified email:
 
-1. Create and download a Firebase service-account JSON file from a trusted administrator workstation.
-2. Store it outside this repository.
-3. Set `GOOGLE_APPLICATION_CREDENTIALS` to its absolute path.
-4. Install dependencies with `npm install`.
-
-## Grant manager access
-
-```bash
-node scripts/set-manager-role.mjs manager@example.com
+```sql
+update public.profiles
+set role = 'manager'
+where email = 'manager@company.com';
 ```
 
-The script adds the verified Firebase `manager` custom claim and updates the user's profile. The user must sign out and sign back in to refresh the ID token.
+4. Confirm one row was updated.
+5. The manager can then use the **HR & Admin Portal** on their next sign-in.
 
-Never commit the service-account JSON file. To revoke access, remove the custom claim with an administrator script or Firebase Admin tooling and change the profile role back to `employee`.
-
+To revoke manager access, update the same profile back to `employee`. Do not grant roles from browser code or edit the migration to make new accounts managers by default.

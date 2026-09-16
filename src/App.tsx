@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { AuthProvider, useAuth } from "./lib/auth-context.tsx";
 import { NotificationCenter } from "./components/NotificationCenter.tsx";
 import { CalendarDays, LogOut } from "lucide-react";
+import { BrandLogo } from "./components/BrandLogo.tsx";
 
 const LoginScreen = lazy(() => import("./components/LoginScreen.tsx").then(module => ({ default: module.LoginScreen })));
 const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx").then(module => ({ default: module.EmployeeDashboard })));
@@ -39,9 +40,7 @@ const MainLayout: React.FC = () => {
             
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-lg bg-slate-900 text-white flex items-center justify-center shadow-sm">
-                <CalendarDays className="h-5 w-5 text-slate-100" />
-              </div>
+              <BrandLogo className="h-10 w-10 drop-shadow-sm" />
               <div>
                 <span className="text-sm font-bold text-slate-900 tracking-tight block">Enterprise LMS</span>
                 <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Leave Management Portal</span>
@@ -53,7 +52,7 @@ const MainLayout: React.FC = () => {
               
               <div className="hidden md:inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm bg-emerald-50/60 text-emerald-800 border-emerald-100">
                 <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-emerald-500" />
-                Cloud Database
+                Supabase Connected
               </div>
 
               {/* In-app Notification center */}
@@ -96,7 +95,7 @@ const MainLayout: React.FC = () => {
 
       {/* Enterprise Footer */}
       <footer className="bg-white border-t border-slate-200/60 py-6 text-center text-xs text-slate-500">
-        <p className="font-medium">© {new Date().getFullYear()} Enterprise HR Portal. Secured via OAuth + Zero-Trust Firestore ABAC.</p>
+        <p className="font-medium">© {new Date().getFullYear()} Enterprise HR Portal. Secured with Supabase Auth and row-level access controls.</p>
       </footer>
 
     </div>
@@ -112,5 +111,4 @@ export default function App() {
     </AuthProvider>
   );
 }
-
 

@@ -8,21 +8,23 @@ import {
   Lock, 
   Mail,
   Briefcase,
-  Building2,
   Users,
   ShieldAlert,
   Eye,
   EyeOff,
   CheckCircle2
 } from "lucide-react";
+import { BrandLogo } from "./BrandLogo.tsx";
 
 export const LoginScreen: React.FC = () => {
+  const googleAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
   const { 
     signInWithGoogle, 
     signInWithEmail, 
-    signUpWithEmail, 
-    authError, 
-    clearAuthError 
+    signUpWithEmail,
+    authError,
+    authNotice,
+    clearAuthStatus
   } = useAuth();
   
   // Categorized Portal Gateway: "employee" | "manager"
@@ -48,7 +50,7 @@ export const LoginScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const handleRoleChange = (newRole: "employee" | "manager") => {
-    clearAuthError();
+    clearAuthStatus();
     setActiveRole(newRole);
     if (newRole === "manager") {
       setSignUpDepartment("Human Resources");
@@ -60,7 +62,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   const handleAuthModeChange = (mode: "signin" | "signup") => {
-    clearAuthError();
+    clearAuthStatus();
     setAuthMode(mode);
   };
 
@@ -116,8 +118,8 @@ export const LoginScreen: React.FC = () => {
       
       {/* Header / Brand Banner */}
       <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center mb-6">
-        <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-lg mb-3 shadow-slate-900/10 hover:scale-105 transition-transform duration-300">
-          <Building2 className="h-7 w-7 text-slate-100" />
+        <div className="inline-flex hover:scale-105 transition-transform duration-300">
+          <BrandLogo className="h-14 w-14 drop-shadow-lg mb-3" />
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Enterprise Leave Portal
@@ -213,6 +215,16 @@ export const LoginScreen: React.FC = () => {
               </div>
             )}
 
+            {authNotice && (
+              <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-start space-x-3 animate-in fade-in duration-200">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-xs font-bold text-emerald-900">Account Request Received</h4>
+                  <p className="text-xs text-emerald-700 mt-0.5 font-medium leading-relaxed">{authNotice}</p>
+                </div>
+              </div>
+            )}
+
             {/* AUTH MODE TOGGLE: Sign In vs Create Account */}
             <div className="flex items-center p-1 bg-slate-100 rounded-xl mb-6">
               <button
@@ -278,7 +290,7 @@ export const LoginScreen: React.FC = () => {
                       required
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      placeholder={activeRole === "manager" ? "diana@enterprise.com" : "alice@enterprise.com"}
+                      placeholder={activeRole === "manager" ? "hr@company.com" : "name@company.com"}
                       className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                     />
                   </div>
@@ -474,7 +486,7 @@ export const LoginScreen: React.FC = () => {
               </form>
             )}
 
-            {/* OR DIVIDER */}
+            {googleAuthEnabled && <>
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-200/80"></div>
@@ -512,12 +524,13 @@ export const LoginScreen: React.FC = () => {
               </svg>
               Sign in with Corporate Google Account
             </button>
+            </>}
 
           </div>
 
           {/* Footer note */}
           <div className="py-3 px-6 bg-slate-50 border-t border-slate-100 text-center text-[10px] font-semibold text-slate-400">
-            Firebase Authentication • Role-Based Access • Secure Session Reset
+            Supabase Authentication • Protected Database • Fresh Sign-In Every Visit
           </div>
 
         </div>
@@ -526,5 +539,4 @@ export const LoginScreen: React.FC = () => {
     </div>
   );
 };
-
 

@@ -1,127 +1,58 @@
-# Employee Leave Management System
+# Enterprise Leave Portal
 
-A React and Firebase application for managing employee leave requests, approvals, balances, cancellations, notifications, and audit history.
+A React and Supabase application for employee leave requests, balances, approvals, cancellations, notifications, audit history, and CSV reporting.
 
-## Current features
+## Platform
 
-### Employee portal
+- React 19, TypeScript, Vite, and Tailwind CSS
+- Supabase Auth for email/password and Google sign-in
+- Supabase Postgres for all application records
+- Postgres row-level security (RLS) for employee and manager access
+- Transactional database functions for approvals, cancellations, and balance changes
+- Express production server and Sites hosting
 
-- Email/password and Google sign-in
-- Demo accounts for local evaluation
-- Leave balance overview
-- Business-day leave calculation
-- Leave request submission and history
-- Withdrawal and cancellation workflows
-- Approval report printing
-- Notifications and activity history
-
-### Manager portal
-
-- Pending, approved, rejected, and cancellation request review
-- Employee and department filtering
-- Leave statistics
-- Employee leave-limit editing
-- Notifications and audit records
-- Demo data seeding
-
-## Technology
-
-- React 19 and TypeScript
-- Vite 6
-- Tailwind CSS 4
-- Firebase Authentication
-- Cloud Firestore
-- Express production server
-- npm or Bun dependency management
-
-## Project structure
-
-```text
-.
-├── server.ts                         Express/Vite server
-├── firestore.rules                   Firestore authorization rules
-├── firebase-applet-config.json       Firebase client configuration
-├── firebase-blueprint.json           Firestore data model
-└── src
-    ├── App.tsx                       Authenticated application shell
-    ├── components
-    │   ├── LoginScreen.tsx
-    │   ├── EmployeeDashboard.tsx
-    │   ├── ManagerDashboard.tsx
-    │   └── NotificationCenter.tsx
-    ├── lib
-    │   ├── auth-context.tsx          Authentication and profile state
-    │   ├── db-service.ts             Firestore and demo-data operations
-    │   └── firebase.ts               Firebase initialization
-    └── types.ts                      Shared domain types
-```
+The application deliberately starts signed out on every page visit. It does not include demo accounts, sample-data shortcuts, or stored browser sessions.
 
 ## Local setup
 
-### Prerequisites
-
-- Node.js 20 or newer
-- npm
-- A Firebase project with Authentication and Firestore enabled
-
-### Install and run
+1. Create a Supabase project.
+2. Open the Supabase SQL editor and run `supabase/migrations/202609150001_initial_schema.sql`.
+3. Copy `.env.example` to `.env.local` and add the project URL and publishable key.
+4. In Supabase Authentication URL Configuration, set the production Site URL and add the local development URL when needed.
+5. Enable Email authentication. Enable Google only after adding its client ID and secret in Supabase.
+6. Install dependencies and run the app:
 
 ```bash
 npm install
 npm run dev
 ```
 
-The application starts on `http://localhost:3001` by default.
+The local app starts at `http://localhost:3001`.
 
-### Firebase setup
+## Manager access
 
-1. Create a Firebase web application.
-2. Enable Email/Password and Google providers under Firebase Authentication.
-3. Create a Firestore database.
-4. Replace the values in `firebase-applet-config.json` with the configuration for your project.
-5. Review and deploy `firestore.rules` only after completing the security work described in [docs/REPOSITORY_REPORT.md](docs/REPOSITORY_REPORT.md).
+New accounts always start as employees. After the intended manager has registered, grant access from the Supabase SQL editor:
 
-Firebase web configuration identifies the project and is not an administrator secret. Never commit service-account credentials or private keys.
+```sql
+update public.profiles
+set role = 'manager'
+where email = 'manager@company.com';
+```
+
+See `docs/MANAGER_PROVISIONING.md` for operational guidance.
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Run Express with Vite development middleware |
-| `npm run lint` | Type-check the TypeScript source |
-| `npm run build` | Build the client and production server |
-| `npm start` | Start the built production server |
+| `npm run dev` | Run the local application |
+| `npm run lint` | Check TypeScript |
+| `npm run build` | Create the production build |
+| `npm run check` | Run checks and build |
+| `npm start` | Start the built server |
 
-## Production build
+## Security model
 
-```bash
-npm run lint
-npm run build
-NODE_ENV=production npm start
-```
+The publishable Supabase key is a browser identifier, not an administrator secret. RLS is enabled on every application table. Employees can read only their own records. Managers can read organization records, while privileged workflow changes run through database functions that verify the caller's role and update the request, balance, notification, and audit trail in one transaction.
 
-On Windows PowerShell, set the environment variable with:
-
-```powershell
-$env:NODE_ENV = "production"
-npm start
-```
-
-## Security and production setup
-
-Public registration creates employee accounts only. Manager access requires a verified Firebase custom claim and must be granted from a trusted administrator workstation. See [Manager provisioning](docs/MANAGER_PROVISIONING.md).
-
-Deploy the hardened Firestore rules after reviewing them:
-
-```bash
-npx firebase-tools login
-npx firebase-tools deploy --only firestore:rules
-```
-
-Run the full local verification before opening a pull request:
-
-```bash
-npm run check
-```
-
-See [docs/REPOSITORY_REPORT.md](docs/REPOSITORY_REPORT.md) for the complete assessment and remediation history.
+Never place the Supabase service-role key in this repository or any browser environment variable.

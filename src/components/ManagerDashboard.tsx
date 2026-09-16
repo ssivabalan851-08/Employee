@@ -16,7 +16,6 @@ export const ManagerDashboard: React.FC = () => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [seedLoading, setSeedLoading] = useState<boolean>(false);
   
   // Loading states
   const [loading, setLoading] = useState<boolean>(true);
@@ -74,21 +73,6 @@ export const ManagerDashboard: React.FC = () => {
     }
   };
 
-  const handleSeedCloud = async () => {
-    if (!token) return;
-    try {
-      setSeedLoading(true);
-      setError(null);
-      await DbService.seedSampleCloudRequests(token);
-      await loadManagerData();
-    } catch (err: any) {
-      console.error("Failed to seed requests", err);
-      setError("Failed to seed sample requests into Firestore: " + err.message);
-    } finally {
-      setSeedLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadManagerData();
   }, [token]);
@@ -103,7 +87,7 @@ export const ManagerDashboard: React.FC = () => {
     if (!token) return;
     try {
       setReviewLoading(true);
-      await DbService.approveLeaveRequest(token, id, reviewComment, user?.uid || token);
+      await DbService.approveLeaveRequest(token, id, reviewComment);
       setReviewRequest(null);
       setReviewComment("");
       await loadManagerData();
@@ -121,7 +105,7 @@ export const ManagerDashboard: React.FC = () => {
     if (!token) return;
     try {
       setReviewLoading(true);
-      await DbService.rejectLeaveRequest(token, id, reviewComment, user?.uid || token);
+      await DbService.rejectLeaveRequest(token, id, reviewComment);
       setReviewRequest(null);
       setReviewComment("");
       await loadManagerData();
@@ -139,7 +123,7 @@ export const ManagerDashboard: React.FC = () => {
     if (!token) return;
     try {
       setReviewLoading(true);
-      await DbService.approveLeaveCancellation(token, id, user?.uid || token);
+      await DbService.approveLeaveCancellation(token, id);
       setReviewRequest(null);
       setReviewComment("");
       await loadManagerData();
@@ -157,7 +141,7 @@ export const ManagerDashboard: React.FC = () => {
     if (!token) return;
     try {
       setReviewLoading(true);
-      await DbService.rejectLeaveCancellation(token, id, reviewComment, user?.uid || token);
+      await DbService.rejectLeaveCancellation(token, id, reviewComment);
       setReviewRequest(null);
       setReviewComment("");
       await loadManagerData();
