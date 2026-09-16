@@ -17,11 +17,11 @@ import {
   Printer,
   X,
   ShieldCheck,
-  Building2,
   Sparkles
 } from "lucide-react";
 import { LeaveType, LeaveRequest, LeaveStatus } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
+import { BrandLogo } from "./BrandLogo.tsx";
 
 export const EmployeeDashboard: React.FC = () => {
   const { user, balances, token, refreshProfile } = useAuth();
@@ -715,9 +715,7 @@ export const EmployeeDashboard: React.FC = () => {
             {/* Header / Document Bar */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-5 mb-6">
               <div className="flex items-center space-x-3">
-                <div className="h-11 w-11 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-md shadow-slate-900/10">
-                  <Building2 className="h-6 w-6 text-slate-100" />
-                </div>
+                <BrandLogo className="h-11 w-11 drop-shadow-md" />
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
