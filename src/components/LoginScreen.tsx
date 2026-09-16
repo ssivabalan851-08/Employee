@@ -263,10 +263,7 @@ export const LoginScreen: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  handleRoleChange("employee");
-                  handleAuthModeChange("signup");
-                }}
+                onClick={() => handleAuthModeChange("signup")}
                 className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 flex items-center justify-center space-x-1.5 ${
                   authMode === "signup"
                     ? "bg-white text-slate-900 shadow-sm"
@@ -284,13 +281,15 @@ export const LoginScreen: React.FC = () => {
                 {authMode === "signin" ? (
                   activeRole === "manager" ? "Sign in to HR Administration" : "Sign in to Employee Portal"
                 ) : (
-                  "Create New Employee Account"
+                  activeRole === "manager" ? "HR Account Access" : "Create New Employee Account"
                 )}
               </h2>
               <p className="text-xs text-slate-500 mt-1 font-medium">
                 {authMode === "signin"
                   ? `Enter your corporate credentials to access the ${activeRole === "manager" ? "HR manager" : "employee"} workspace.`
-                  : "New accounts receive employee access. An administrator must grant manager access."}
+                  : activeRole === "manager"
+                    ? "HR access is granted by an existing administrator after the employee account is created."
+                    : "New accounts receive employee access. An administrator must grant manager access."}
               </p>
             </div>
 
@@ -369,6 +368,32 @@ export const LoginScreen: React.FC = () => {
                 </button>
 
               </form>
+            ) : activeRole === "manager" ? (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center">
+                  <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white">
+                    <ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900">HR accounts require administrator approval</h3>
+                  <p className="mt-2 text-xs font-medium leading-relaxed text-slate-600">
+                    Create an employee account first. An existing administrator can then change that account to the manager role in Supabase.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAuthModeChange("signin")}
+                  className="w-full rounded-xl bg-slate-900 px-4 py-3 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
+                >
+                  Sign In with an Existing HR Account
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRoleChange("employee")}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                  Create an Employee Account
+                </button>
+              </div>
             ) : (
               /* MODE 2: CREATE ACCOUNT (SIGN UP) FORM */
               <form onSubmit={handleSignUpSubmit} className="space-y-3.5">
@@ -491,17 +516,13 @@ export const LoginScreen: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center space-x-2 transition-all duration-150 ${
-                    activeRole === "manager"
-                      ? "bg-slate-900 hover:bg-slate-800 hover:shadow-md"
-                      : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-md"
-                  } disabled:opacity-50`}
+                  className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center space-x-2 transition-all duration-150 bg-indigo-600 hover:bg-indigo-700 hover:shadow-md disabled:opacity-50"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>
                     {submitting 
                       ? "Creating Account..." 
-                      : `Register as ${activeRole === "manager" ? "HR Administrator" : "Corporate Employee"}`}
+                      : "Register as Corporate Employee"}
                   </span>
                 </button>
 
