@@ -3,7 +3,7 @@ import { LeaveBalance, UserProfile } from "../types.ts";
 import { DbService } from "./db-service.ts";
 import { supabaseAuth, SupabaseAuthUser } from "./supabase.ts";
 
-export interface SignUpDetails { email: string; password: string; name: string; department: string; title: string; }
+export interface SignUpDetails { email: string; password: string; name: string; department: string; title: string; requestedRole: "employee" | "manager"; }
 
 interface AuthContextType {
   user: UserProfile | null; balances: LeaveBalance | null; token: string | null; loading: boolean; authError: string | null; authNotice: string | null;
@@ -71,9 +71,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const email = details.email.trim().toLowerCase();
       const name = details.name.trim();
       if (!name || !email || details.password.length < 6) throw new Error("Enter your name, work email, and a password of at least 6 characters.");
-      const result = await supabaseAuth.signUp(email, details.password, { full_name: name, department: details.department, title: details.title });
+      const result = await supabaseAuth.signUp(email, details.password, {
+        full_name: name,
+        department: details.department,
+        title: details.title,
+        requested_role: details.requestedRole,
+      });
       if (!result.hasSession) {
-        setAuthNotice("Check your email for a confirmation link. If this address already has an account, use Sign In instead.");
+        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account was created. Confirm your email${details.requestedRole === "manager" ? " and wait for administrator approval" : ""}, then sign in.`);
+        return;
+      }
+      if (details.requestedRole === "manager") {
+        await supabaseAuth.signOut();
+        setAuthNotice("Your HR account request was created. An administrator must grant HR access before you can sign in to the HR portal.");
         return;
       }
       await beginSession(result.user, "employee");
