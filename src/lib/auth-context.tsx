@@ -55,7 +55,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const authUser = await supabaseAuth.signInWithPassword(email.trim().toLowerCase(), password);
       await beginSession(authUser, role);
     } catch (error: any) {
-      const message = /invalid login credentials/i.test(error.message) ? "Invalid email or password. Please check your credentials or create a new account." : error.message || "Sign in failed.";
+      const message = /email not confirmed/i.test(error.message)
+        ? "Your account exists, but the email address is not confirmed. Open the Supabase confirmation email, confirm the account, then sign in again."
+        : /invalid login credentials/i.test(error.message)
+          ? "Invalid email or password. Please check your credentials or create a new account."
+          : error.message || "Sign in failed.";
       setAuthError(message); throw new Error(message);
     } finally { setLoading(false); }
   };
