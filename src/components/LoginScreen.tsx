@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
+import { accountEmailHelp, accountEmailPattern } from "../lib/email-validation.ts";
 
 export const LoginScreen: React.FC = () => {
   const googleAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
@@ -325,12 +326,15 @@ export const LoginScreen: React.FC = () => {
                       data-lpignore="true"
                       data-1p-ignore="true"
                       required
+                      pattern={accountEmailPattern}
+                      title={accountEmailHelp}
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
-                      placeholder={activeRole === "manager" ? "hr@company.com" : "name@company.com"}
+                      placeholder={activeRole === "manager" ? "hr123@company.com" : "name123@company.com"}
                       className="w-full pl-10 pr-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                     />
                   </div>
+                  <p className="mt-1.5 text-[10px] font-medium text-slate-400">{accountEmailHelp}</p>
                 </div>
 
                 {/* Password */}
@@ -432,12 +436,15 @@ export const LoginScreen: React.FC = () => {
                       data-lpignore="true"
                       data-1p-ignore="true"
                       required
+                      pattern={accountEmailPattern}
+                      title={accountEmailHelp}
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
-                      placeholder="e.g. marcus@enterprise.com"
+                      placeholder="e.g. marcus123@enterprise.com"
                       className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                     />
                   </div>
+                  <p className="mt-1.5 text-[10px] font-medium text-slate-400">{accountEmailHelp}</p>
                 </div>
 
                 {/* Password */}

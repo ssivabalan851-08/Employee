@@ -45,6 +45,14 @@ export const supabaseAuth = {
     accessToken = data.access_token || null;
     return { user: data.user as SupabaseAuthUser, hasSession: Boolean(data.access_token) };
   },
+  async requestAccountApproval(userId: string) {
+    const response = await fetch(`${supabaseUrl}/functions/v1/account-approval`, {
+      method: "POST",
+      headers: authHeaders(null),
+      body: JSON.stringify({ action: "request", user_id: userId }),
+    });
+    await parseResponse(response);
+  },
   async resendSignUpConfirmation(email: string) {
     const redirectTo = `${window.location.origin}${window.location.pathname}`;
     const response = await fetch(`${supabaseUrl}/auth/v1/resend?redirect_to=${encodeURIComponent(redirectTo)}`, {
