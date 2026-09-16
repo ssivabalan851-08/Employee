@@ -20,8 +20,9 @@ export const LoginScreen: React.FC = () => {
   const googleAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
   const { 
     signInWithGoogle, 
-    signInWithEmail, 
+    signInWithEmail,
     signUpWithEmail,
+    resendConfirmation,
     authError,
     authNotice,
     clearAuthStatus
@@ -92,6 +93,17 @@ export const LoginScreen: React.FC = () => {
         title: signUpTitle
       });
     } catch (err) {
+      // Error handled by AuthContext
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      setSubmitting(true);
+      await resendConfirmation(signInEmail);
+    } catch {
       // Error handled by AuthContext
     } finally {
       setSubmitting(false);
@@ -211,6 +223,16 @@ export const LoginScreen: React.FC = () => {
                 <div className="flex-1">
                   <h4 className="text-xs font-bold text-rose-900">Authentication Error</h4>
                   <p className="text-xs text-rose-700 mt-0.5 font-medium leading-relaxed">{authError}</p>
+                  {authError.includes("not confirmed") && (
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={handleResendConfirmation}
+                      className="mt-2 text-xs font-bold text-rose-800 underline underline-offset-2 disabled:opacity-50"
+                    >
+                      Resend confirmation email
+                    </button>
+                  )}
                 </div>
               </div>
             )}

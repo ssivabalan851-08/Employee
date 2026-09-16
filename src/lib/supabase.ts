@@ -45,6 +45,15 @@ export const supabaseAuth = {
     accessToken = data.access_token || null;
     return { user: data.user as SupabaseAuthUser, hasSession: Boolean(data.access_token) };
   },
+  async resendSignUpConfirmation(email: string) {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const response = await fetch(`${supabaseUrl}/auth/v1/resend?redirect_to=${encodeURIComponent(redirectTo)}`, {
+      method: "POST",
+      headers: authHeaders(null),
+      body: JSON.stringify({ type: "signup", email }),
+    });
+    await parseResponse(response);
+  },
   signInWithGoogle() {
     if (!supabaseUrl || !supabaseKey) throw configurationError();
     const redirectTo = `${window.location.origin}${window.location.pathname}`;

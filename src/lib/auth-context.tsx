@@ -11,6 +11,7 @@ interface AuthContextType {
   signInWithGoogle: (role: "employee" | "manager") => Promise<void>;
   signInWithEmail: (email: string, password: string, role: "employee" | "manager") => Promise<void>;
   signUpWithEmail: (details: SignUpDetails) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateRoleAndProfile: (updates: { name?: string; department?: string; title?: string }) => Promise<void>;
   refreshProfile: (uid?: string, role?: "employee" | "manager") => Promise<void>;
@@ -85,6 +86,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     finally { setLoading(false); }
   };
 
+  const resendConfirmation = async (email: string) => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      const message = "Enter your email address first, then request a new confirmation email.";
+      setAuthError(message);
+      throw new Error(message);
+    }
+    setLoading(true); setAuthError(null); setAuthNotice(null);
+    try {
+      await supabaseAuth.resendSignUpConfirmation(cleanEmail);
+      setAuthNotice("A fresh confirmation email was requested. Open it and confirm your account before signing in.");
+    } catch (error: any) {
+      const message = error.message || "The confirmation email could not be resent. Please try again shortly.";
+      setAuthError(message); throw new Error(message);
+    } finally { setLoading(false); }
+  };
+
   const logout = async () => {
     setLoading(true);
     try { await supabaseAuth.signOut(); sessionStorage.removeItem("portal_role"); setToken(null); setUser(null); setBalances(null); setAuthError(null); setAuthNotice(null); }
@@ -107,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearAuthStatus = () => { setAuthError(null); setAuthNotice(null); };
 
-  return <AuthContext.Provider value={{ user, balances, token, loading, authError, authNotice, clearAuthStatus, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, updateRoleAndProfile, refreshProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, balances, token, loading, authError, authNotice, clearAuthStatus, signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, logout, updateRoleAndProfile, refreshProfile }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
