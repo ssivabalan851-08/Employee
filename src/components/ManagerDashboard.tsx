@@ -270,7 +270,7 @@ export const ManagerDashboard: React.FC = () => {
   const maxUsedType = stats ? Object.entries(stats.byType).reduce((a, b) => a[1] > b[1] ? a : b) : ["annual", 0];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 leavewise-dashboard leavewise-manager-dashboard">
       {error && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-100/80 flex items-start space-x-3 text-left animate-fade-in shadow-sm">
           <AlertTriangle className="h-5 w-5 text-rose-600 flex-shrink-0 mt-0.5 animate-pulse" />
@@ -282,10 +282,10 @@ export const ManagerDashboard: React.FC = () => {
       )}
 
       {/* Overview Analytics Headers */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 leavewise-page-heading">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 tracking-tight">Manager Administration Console</h2>
-          <p className="text-xs text-slate-500 font-semibold mt-1">Enterprise leave oversight, reviews, and ledger balance adjustments</p>
+          <h2 className="text-lg font-bold text-slate-900 tracking-tight">HR Operations Dashboard</h2>
+          <p className="text-xs text-slate-500 font-semibold mt-1">Review requests, monitor leave activity, and maintain employee balances</p>
         </div>
         <div className="flex items-center space-x-3">
           <button
@@ -303,7 +303,7 @@ export const ManagerDashboard: React.FC = () => {
       ) : (
         <>
           {/* Key Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Action</span>

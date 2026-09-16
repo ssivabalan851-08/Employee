@@ -9,7 +9,7 @@ const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx"
 const ManagerDashboard = lazy(() => import("./components/ManagerDashboard.tsx").then(module => ({ default: module.ManagerDashboard })));
 
 const LoadingScreen = () => (
-  <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+  <div className="min-h-screen leavewise-loading flex items-center justify-center">
     <div className="text-center space-y-4">
       <div className="animate-pulse h-12 w-12 bg-slate-900 rounded-xl flex items-center justify-center text-white mx-auto">
         <CalendarDays className="h-5 w-5 animate-spin text-slate-200" />
@@ -31,19 +31,19 @@ const MainLayout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col font-sans leavewise-app-shell">
       
       {/* Corporate Header */}
-      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-sm">
+      <header className="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-sm leavewise-topbar">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <BrandLogo className="h-10 w-10 drop-shadow-sm" />
+            <div className="flex items-center space-x-3 leavewise-header-brand">
+              <BrandLogo compact />
               <div>
-                <span className="text-sm font-bold text-slate-900 tracking-tight block">Enterprise LMS</span>
-                <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Leave Management Portal</span>
+                <span className="text-sm font-bold text-slate-900 tracking-tight block">LeaveWise</span>
+                <span className="block text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Workplace Leave Management</span>
               </div>
             </div>
 
@@ -52,7 +52,7 @@ const MainLayout: React.FC = () => {
               
               <div className="hidden md:inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border shadow-sm bg-emerald-50/60 text-emerald-800 border-emerald-100">
                 <span className="h-1.5 w-1.5 rounded-full mr-1.5 bg-emerald-500" />
-                Supabase Connected
+                System Online
               </div>
 
               {/* In-app Notification center */}
@@ -89,13 +89,13 @@ const MainLayout: React.FC = () => {
       </header>
 
       {/* Main Workspace Stage */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 leavewise-workspace">
         {user.role === "manager" ? <ManagerDashboard /> : <EmployeeDashboard />}
       </main>
 
       {/* Enterprise Footer */}
-      <footer className="bg-white border-t border-slate-200/60 py-6 text-center text-xs text-slate-500">
-        <p className="font-medium">© {new Date().getFullYear()} Enterprise HR Portal. Secured with Supabase Auth and row-level access controls.</p>
+      <footer className="bg-white border-t border-slate-200/60 py-6 text-center text-xs text-slate-500 leavewise-footer">
+        <p className="font-medium">© {new Date().getFullYear()} LeaveWise. Secure leave management for modern workplaces.</p>
       </footer>
 
     </div>
