@@ -244,7 +244,7 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 leavewise-dashboard leavewise-employee-dashboard">
       {/* Overview Section */}
       <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -285,7 +285,7 @@ export const EmployeeDashboard: React.FC = () => {
       {/* Leave Balances Grid */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3.5">Available Leave Balances</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {(["annual", "sick", "casual", "parental"] as LeaveType[]).map((type) => {
             const cat = balances ? balances[type] : { total: 0, used: 0 };
             const rem = cat.total - cat.used;
@@ -563,7 +563,7 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">Activity Logs & Audit Trail</h3>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Zero-trust cryptographic trace of all leave events</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Complete history of your leave activity</p>
               </div>
             </div>
 
@@ -715,7 +715,7 @@ export const EmployeeDashboard: React.FC = () => {
             {/* Header / Document Bar */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-5 mb-6">
               <div className="flex items-center space-x-3">
-                <BrandLogo className="h-11 w-11 drop-shadow-md" />
+                <BrandLogo compact />
                 <div>
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -926,7 +926,7 @@ export const EmployeeDashboard: React.FC = () => {
               <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-slate-400 text-[10px] font-semibold">
                 <div className="flex items-center space-x-1.5">
                   <ShieldCheck className="h-4 w-4 text-slate-400" />
-                  <span>Enterprise Leave Management System • System Certified Audit Record</span>
+                  <span>LeaveWise • Verified leave activity record</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button

@@ -124,31 +124,44 @@ export const LoginScreen: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-10 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden leavewise-login">
       
       {/* Decorative corporate ambient background glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-slate-200/50 via-slate-100/20 to-transparent pointer-events-none blur-3xl -z-10" />
+      <div className="leavewise-login-orb leavewise-login-orb--one" />
+      <div className="leavewise-login-orb leavewise-login-orb--two" />
+
+      <div className="leavewise-login-grid">
       
       {/* Header / Brand Banner */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center mb-6">
-        <div className="inline-flex hover:scale-105 transition-transform duration-300">
-          <BrandLogo className="h-14 w-14 drop-shadow-lg mb-3" />
+      <section className="leavewise-brand-panel">
+        <div className="leavewise-brand-content">
+        <div className="inline-flex transition-transform duration-300">
+          <BrandLogo />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Enterprise Leave Portal
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+          Leave management that keeps every team in sync.
         </h1>
-        <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest mt-1">
-          Human Resources & Time-Off Management System
+        <p className="text-sm font-medium mt-3 leading-relaxed leavewise-brand-copy">
+          A secure workspace for employee requests, HR approvals, balances, and day-to-day absence planning.
         </p>
-      </div>
+        <div className="leavewise-brand-points" aria-label="Platform highlights">
+          <span><CheckCircle2 className="h-4 w-4" /> Employee self-service</span>
+          <span><CheckCircle2 className="h-4 w-4" /> HR review workspace</span>
+          <span><CheckCircle2 className="h-4 w-4" /> Secure cloud records</span>
+        </div>
+        </div>
+      </section>
 
-      <div className="sm:mx-auto sm:w-full sm:max-w-xl">
-        <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] rounded-2xl overflow-hidden transition-all duration-300">
+      <section className="leavewise-auth-wrap">
+        <div className="leavewise-mobile-brand">
+          <BrandLogo />
+        </div>
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] rounded-2xl overflow-hidden transition-all duration-300 leavewise-auth-card">
           
           {/* CATEGORIZED PORTAL GATEWAY SELECTOR */}
           <div className="p-3 bg-slate-100/80 border-b border-slate-200/80">
             <div className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2 px-1 text-center">
-              Select Corporate Gateway
+              Choose your workspace
             </div>
             <div className="grid grid-cols-2 gap-2">
               
@@ -546,10 +559,12 @@ export const LoginScreen: React.FC = () => {
 
           {/* Footer note */}
           <div className="py-3 px-6 bg-slate-50 border-t border-slate-100 text-center text-[10px] font-semibold text-slate-400">
-            Supabase Authentication • Protected Database • Fresh Sign-In Every Visit
+            Secure authentication • Protected records • Fresh sign-in every visit
           </div>
 
         </div>
+      </section>
+
       </div>
 
     </div>
