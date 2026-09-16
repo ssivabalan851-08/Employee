@@ -307,7 +307,7 @@ export const LoginScreen: React.FC = () => {
 
             {/* MODE 1: SIGN IN FORM */}
             {authMode === "signin" ? (
-              <form onSubmit={handleSignInSubmit} className="space-y-4">
+              <form onSubmit={handleSignInSubmit} className="space-y-4" autoComplete="off">
                 
                 {/* Email Address */}
                 <div>
@@ -320,6 +320,10 @@ export const LoginScreen: React.FC = () => {
                     </div>
                     <input
                       type="email"
+                      name={`leavewise-${activeRole}-signin-email`}
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       required
                       value={signInEmail}
                       onChange={(e) => setSignInEmail(e.target.value)}
@@ -345,6 +349,10 @@ export const LoginScreen: React.FC = () => {
                     </div>
                     <input
                       type={showSignInPassword ? "text" : "password"}
+                      name={`leavewise-${activeRole}-signin-password`}
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       required
                       value={signInPassword}
                       onChange={(e) => setSignInPassword(e.target.value)}
@@ -382,7 +390,7 @@ export const LoginScreen: React.FC = () => {
               </form>
             ) : (
               /* MODE 2: CREATE ACCOUNT (SIGN UP) FORM */
-              <form onSubmit={handleSignUpSubmit} className="space-y-3.5">
+              <form onSubmit={handleSignUpSubmit} className="space-y-3.5" autoComplete="off">
                 
                 {/* Full Name */}
                 <div>
@@ -395,6 +403,10 @@ export const LoginScreen: React.FC = () => {
                     </div>
                     <input
                       type="text"
+                      name={`leavewise-${activeRole}-signup-name`}
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       required
                       value={signUpName}
                       onChange={(e) => setSignUpName(e.target.value)}
@@ -415,6 +427,10 @@ export const LoginScreen: React.FC = () => {
                     </div>
                     <input
                       type="email"
+                      name={`leavewise-${activeRole}-signup-email`}
+                      autoComplete="off"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       required
                       value={signUpEmail}
                       onChange={(e) => setSignUpEmail(e.target.value)}
@@ -435,6 +451,10 @@ export const LoginScreen: React.FC = () => {
                     </div>
                     <input
                       type={showSignUpPassword ? "text" : "password"}
+                      name={`leavewise-${activeRole}-signup-password`}
+                      autoComplete="new-password"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
                       required
                       minLength={6}
                       value={signUpPassword}
@@ -479,6 +499,8 @@ export const LoginScreen: React.FC = () => {
                       </div>
                       <input
                         type="text"
+                        name={`leavewise-${activeRole}-signup-title`}
+                        autoComplete="off"
                         required
                         value={signUpTitle}
                         onChange={(e) => setSignUpTitle(e.target.value)}
