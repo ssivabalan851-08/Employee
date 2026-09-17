@@ -2,10 +2,13 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SECRET_KEY") || "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY") || "";
 const ADMIN_EMAIL = Deno.env.get("ADMIN_APPROVAL_EMAIL") || "ssivabalan851@gmail.com";
 const CONTACT_EMAIL = Deno.env.get("APPROVAL_CONTACT_EMAIL") || ADMIN_EMAIL;
 const CONTACT_PHONE = Deno.env.get("APPROVAL_CONTACT_PHONE") || "";
 const FROM_EMAIL = Deno.env.get("APPROVAL_FROM_EMAIL") || "LeaveWise Accounts <onboarding@resend.dev>";
+const BREVO_SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL") || CONTACT_EMAIL;
+const BREVO_SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || "LeaveWise Accounts";
 const SITE_URL = (Deno.env.get("SITE_URL") || "https://employee-leave-portal.ssivabalan851.chatgpt.site").replace(/\/$/, "");
 
 const corsHeaders = {
@@ -47,7 +50,24 @@ function shell(content: string) {
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!RESEND_API_KEY) throw new Error("Approval email delivery is not configured.");
+  if (BREVO_API_KEY) {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": BREVO_API_KEY, accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
+        to: [{ email: to }],
+        replyTo: { name: "LeaveWise Support", email: CONTACT_EMAIL },
+        subject,
+        htmlContent: html,
+      }),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(result?.message || "Email could not be delivered through Brevo.");
+    return result;
+  }
+
+  if (!RESEND_API_KEY) throw new Error("Approval email delivery is not configured. Add a Brevo or Resend API key.");
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },

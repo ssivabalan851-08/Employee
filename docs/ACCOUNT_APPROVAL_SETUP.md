@@ -21,7 +21,10 @@ Set these as Edge Function secrets. Never add them to a browser variable or comm
 
 | Secret | Purpose | Example |
 | --- | --- | --- |
-| `RESEND_API_KEY` | Sends transactional emails | Created in Resend |
+| `BREVO_API_KEY` | Recommended free transactional sender when using a verified Gmail address | Created in Brevo |
+| `BREVO_SENDER_EMAIL` | Verified sender address in Brevo | `ssivabalan851@gmail.com` |
+| `BREVO_SENDER_NAME` | Professional sender name | `LeaveWise Accounts` |
+| `RESEND_API_KEY` | Optional alternative when using a verified company domain | Created in Resend |
 | `ADMIN_APPROVAL_EMAIL` | Receives new account requests | `ssivabalan851@gmail.com` |
 | `APPROVAL_CONTACT_EMAIL` | Shown to applicants for clarification | `ssivabalan851@gmail.com` |
 | `APPROVAL_CONTACT_PHONE` | Shown to applicants for clarification | Company HR number |
@@ -32,11 +35,13 @@ Supabase provides `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to the Edge Fun
 
 ## Mail sender
 
-Use a verified Resend sending domain for production. Resend's test sender is useful for initial checks, but it is not suitable for sending decisions to arbitrary employee addresses. Add the domain in Resend, copy the DNS records to the domain provider, wait for verification, and then use an address on that domain in `APPROVAL_FROM_EMAIL`.
+For a Gmail sender, use Brevo and verify the sender address from the verification email it sends. Set `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, and `BREVO_SENDER_NAME`. The function automatically prefers Brevo when that key is present.
+
+Resend remains supported as an alternative for a company-owned domain. Its test sender can deliver only to the account owner's address, so arbitrary employee delivery requires a verified domain and `APPROVAL_FROM_EMAIL` on that domain.
 
 ## Deployment order
 
-1. Configure the six secrets above in Supabase.
+1. Configure the contact settings and one email provider in Supabase.
 2. Deploy `supabase/functions/account-approval` with JWT verification disabled as specified by `supabase/config.toml`. The function performs its own validation because unconfirmed sign-ups do not yet have a session token.
 3. Run `supabase/migrations/202609160001_account_approval.sql` in the Supabase SQL editor.
 4. Deploy the web application.
