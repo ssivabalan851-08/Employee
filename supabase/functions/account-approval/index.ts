@@ -130,9 +130,17 @@ function resultPage(title: string, message: string, kind: ResultKind = "success"
   return htmlResponse(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><div style="width:48px;height:48px;border-radius:50%;background:${color};color:white;font-size:28px;line-height:48px;text-align:center">${kind === "success" ? "✓" : "!"}</div><h1 style="margin:20px 0 10px">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#476764">${escapeHtml(message)}</p><a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#063b39;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:700">Open LeaveWise</a></div></main></body></html>`, kind === "error" ? 400 : 200);
 }
 
-function decisionResponse(title: string, message: string, kind: ResultKind, asJson: boolean) {
+function buildWhatsAppUrl(phoneNumber: string, applicantName: string) {
+  if (!/^\+[1-9][0-9]{7,14}$/.test(phoneNumber)) return undefined;
+  const contactDetails = [CONTACT_EMAIL, CONTACT_PHONE].filter(Boolean).join(" or ");
+  const support = contactDetails ? ` If you need help, contact ${contactDetails}.` : "";
+  const message = `Hello ${applicantName || "there"}, your LeaveWise account has been approved. You can now sign in with your registered email.${support}`;
+  return `https://wa.me/${phoneNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
+}
+
+function decisionResponse(title: string, message: string, kind: ResultKind, asJson: boolean, whatsappUrl?: string) {
   if (!asJson) return resultPage(title, message, kind);
-  return Response.json({ ok: kind !== "error", title, message, kind }, {
+  return Response.json({ ok: kind !== "error", title, message, kind, ...(whatsappUrl ? { whatsapp_url: whatsappUrl } : {}) }, {
     status: kind === "error" ? 400 : 200,
     headers: corsHeaders,
   });
@@ -150,6 +158,7 @@ async function handleDecision(token: string, requestedDecision: ApprovalDecision
 
   const profile = request.profiles;
   const requestedRole = profile.requested_role === "manager" ? "manager" : "employee";
+  const whatsappUrl = approved ? buildWhatsAppUrl(profile.phone_number || "", profile.name || "") : undefined;
   if (!request.decision) {
     await json(await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${request.user_id}`, {
       method: "PATCH", headers: { ...serviceHeaders, Prefer: "return=representation" },
@@ -175,12 +184,12 @@ async function handleDecision(token: string, requestedDecision: ApprovalDecision
         method: "PATCH", headers: { ...serviceHeaders, Prefer: "return=representation" },
         body: JSON.stringify({ approval_sms_attempted_at: attemptedAt, approval_sms_error: smsError }),
       }));
-      return decisionResponse("Account approved", `Access was granted, but the SMS could not be delivered: ${smsError} Reopen the approval link after correcting the SMS setup to retry.`, "warning", asJson);
+      return decisionResponse("Account approved", `Access was granted, but the SMS provider could not accept the message: ${smsError} Use the WhatsApp button below to notify the applicant.`, "warning", asJson, whatsappUrl);
     }
   }
   return decisionResponse(approved ? "Account approved" : "Account rejected", approved
-    ? `The ${requestedRole === "manager" ? "HR" : "employee"} account is active and an SMS was sent to the registered mobile number.`
-    : `The ${requestedRole === "manager" ? "HR" : "employee"} account request was rejected. No applicant email was sent.`, "success", asJson);
+    ? `The ${requestedRole === "manager" ? "HR" : "employee"} account is active. Brevo has accepted the SMS request; use the WhatsApp button below as a reliable backup until SMS credits are active.`
+    : `The ${requestedRole === "manager" ? "HR" : "employee"} account request was rejected. No applicant email was sent.`, "success", asJson, whatsappUrl);
 }
 
 Deno.serve(async (request) => {

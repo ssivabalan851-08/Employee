@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, MessageCircle, ShieldCheck, XCircle } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
 import { supabaseAuth } from "../lib/supabase.ts";
 import type { AccountApprovalResult } from "../lib/supabase.ts";
@@ -65,7 +65,18 @@ export const AccountApprovalPage: React.FC = () => {
               </div>
               <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-slate-900">{displayedResult.title}</h1>
               <p className="mt-3 text-sm leading-7 text-slate-600">{displayedResult.message}</p>
-              <a href="/" className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-[#063b39] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#0a514e]">
+              {displayedResult.whatsapp_url && (
+                <a
+                  href={displayedResult.whatsapp_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#25D366] px-6 text-sm font-bold text-[#052e1a] shadow-sm transition hover:bg-[#20bd5a]"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  Send approval in WhatsApp
+                </a>
+              )}
+              <a href="/" className={`${displayedResult.whatsapp_url ? "mt-3" : "mt-7"} inline-flex min-h-12 items-center justify-center rounded-xl bg-[#063b39] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#0a514e]`}>
                 Open LeaveWise
               </a>
             </div>
@@ -80,7 +91,7 @@ export const AccountApprovalPage: React.FC = () => {
               </h1>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 {approving
-                  ? "Approval activates the requested LeaveWise access and sends one SMS to the applicant's registered mobile number."
+                  ? "Approval activates the requested LeaveWise access and attempts one SMS to the applicant's registered mobile number. A WhatsApp backup will be available after approval."
                   : "Rejection keeps the account inactive. The applicant will not receive an approval email."}
               </p>
               <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-xs leading-6 text-slate-600">
