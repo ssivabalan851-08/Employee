@@ -35,6 +35,15 @@ function parseApprovalDecision(value: string | null): ApprovalDecision | null {
   return value === "approve" || value === "reject" ? value : null;
 }
 
+function htmlResponse(document: string, status = 200) {
+  const headers = new Headers({
+    "content-type": "text/html; charset=utf-8",
+    "x-content-type-options": "nosniff",
+    "cache-control": "no-store",
+  });
+  return new Response(new Blob([document], { type: "text/html; charset=utf-8" }), { status, headers });
+}
+
 async function sha256(value: string) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -117,14 +126,14 @@ async function requireMatchingUser(request: Request, userId: string) {
 
 function resultPage(title: string, message: string, kind: "success" | "warning" | "error" = "success") {
   const color = kind === "success" ? "#087d78" : kind === "warning" ? "#b45309" : "#be123c";
-  return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><div style="width:48px;height:48px;border-radius:50%;background:${color};color:white;font-size:28px;line-height:48px;text-align:center">${kind === "success" ? "✓" : "!"}</div><h1 style="margin:20px 0 10px">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#476764">${escapeHtml(message)}</p><a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#063b39;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:700">Open LeaveWise</a></div></main></body></html>`, { status: kind === "error" ? 400 : 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return htmlResponse(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><div style="width:48px;height:48px;border-radius:50%;background:${color};color:white;font-size:28px;line-height:48px;text-align:center">${kind === "success" ? "✓" : "!"}</div><h1 style="margin:20px 0 10px">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#476764">${escapeHtml(message)}</p><a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#063b39;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:700">Open LeaveWise</a></div></main></body></html>`, kind === "error" ? 400 : 200);
 }
 
 function confirmationPage(token: string, requestedDecision: ApprovalDecision) {
   const approving = requestedDecision === "approve";
   const label = approving ? "Approve account" : "Reject account";
   const color = approving ? "#087d78" : "#be123c";
-  return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${label}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><h1>Confirm your decision</h1><p style="line-height:1.7;color:#476764">Select the button below to ${approving ? "approve this account and grant the requested access. LeaveWise will send one SMS to the applicant's registered mobile number" : "reject this account request. No applicant email will be sent"}.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="decision" value="${requestedDecision}"><button type="submit" style="border:0;background:${color};color:white;padding:13px 20px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">${label}</button></form></div></main></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return htmlResponse(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${label}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><h1>Confirm your decision</h1><p style="line-height:1.7;color:#476764">Select the button below to ${approving ? "approve this account and grant the requested access. LeaveWise will send one SMS to the applicant's registered mobile number" : "reject this account request. No applicant email will be sent"}.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="decision" value="${requestedDecision}"><button type="submit" style="border:0;background:${color};color:white;padding:13px 20px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">${label}</button></form></div></main></body></html>`);
 }
 
 async function handleDecision(token: string, requestedDecision: ApprovalDecision) {
