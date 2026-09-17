@@ -6,6 +6,7 @@ let accessToken: string | null = null;
 export interface SupabaseAuthUser {
   id: string;
   email?: string;
+  identities?: unknown[];
   user_metadata?: Record<string, unknown>;
 }
 
@@ -15,9 +16,17 @@ function configurationError() {
 
 async function parseResponse(response: Response) {
   const body = await response.text();
-  const data = body ? JSON.parse(body) : null;
+  let data: any = null;
+  if (body) {
+    try { data = JSON.parse(body); }
+    catch { data = { error: body }; }
+  }
   if (!response.ok) {
-    throw new Error(data?.msg || data?.message || data?.error_description || data?.error || `Supabase request failed (${response.status}).`);
+    const rawMessage = data?.msg || data?.message || data?.error_description || data?.error || `Supabase request failed (${response.status}).`;
+    const message = /permission denied|row-level security|42501/i.test(String(rawMessage))
+      ? "The account service could not complete this request. Please try again shortly."
+      : String(rawMessage);
+    throw new Error(message);
   }
   return data;
 }
@@ -42,13 +51,17 @@ export const supabaseAuth = {
   async signUp(email: string, password: string, metadata: Record<string, unknown>) {
     const response = await fetch(`${supabaseUrl}/auth/v1/signup`, { method: "POST", headers: authHeaders(null), body: JSON.stringify({ email, password, data: metadata }) });
     const data = await parseResponse(response);
+    if (!data?.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
+      throw new Error("An account already exists for this email.");
+    }
     accessToken = data.access_token || null;
     return { user: data.user as SupabaseAuthUser, hasSession: Boolean(data.access_token) };
   },
   async requestAccountApproval(userId: string) {
+    if (!accessToken) throw new Error("A secure signup session was not created. Confirm email must remain disabled for administrator-approved accounts.");
     const response = await fetch(`${supabaseUrl}/functions/v1/account-approval`, {
       method: "POST",
-      headers: authHeaders(null),
+      headers: authHeaders(),
       body: JSON.stringify({ action: "request", user_id: userId }),
     });
     await parseResponse(response);

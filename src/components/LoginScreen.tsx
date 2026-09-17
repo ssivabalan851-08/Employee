@@ -7,6 +7,7 @@ import {
   ShieldCheck, 
   Lock, 
   Mail,
+  Phone,
   Briefcase,
   Users,
   ShieldAlert,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
 import { accountEmailHelp, accountEmailPattern } from "../lib/email-validation.ts";
+import { applicantPhoneHelp } from "../lib/phone-validation.ts";
 
 export const LoginScreen: React.FC = () => {
   const googleAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
@@ -42,6 +44,7 @@ export const LoginScreen: React.FC = () => {
   // Create Account Form States
   const [signUpName, setSignUpName] = useState("");
   const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPhone, setSignUpPhone] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [signUpDepartment, setSignUpDepartment] = useState(activeRole === "manager" ? "Human Resources" : "Engineering");
@@ -89,6 +92,7 @@ export const LoginScreen: React.FC = () => {
         email: signUpEmail,
         password: signUpPassword,
         name: signUpName,
+        phoneNumber: signUpPhone,
         department: signUpDepartment,
         title: signUpTitle,
         requestedRole: activeRole
@@ -317,13 +321,10 @@ export const LoginScreen: React.FC = () => {
 
                 {/* Password */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center mb-1.5">
                     <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider">
                       Password
                     </label>
-                    <span className="text-[10px] text-slate-400 font-semibold cursor-pointer hover:text-slate-700">
-                      Forgot Password?
-                    </span>
                   </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -423,6 +424,31 @@ export const LoginScreen: React.FC = () => {
                     />
                   </div>
                   <p className="mt-1.5 text-[10px] font-medium text-slate-400">{accountEmailHelp}</p>
+                </div>
+
+                {/* Applicant Mobile Number */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
+                    Applicant Mobile Number
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                      <Phone className="h-4 w-4" />
+                    </div>
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      name={`leavewise-${activeRole}-signup-phone`}
+                      autoComplete="tel"
+                      required
+                      value={signUpPhone}
+                      onChange={(e) => setSignUpPhone(e.target.value)}
+                      placeholder="e.g. +91 97912 41338"
+                      title={applicantPhoneHelp}
+                      className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+                    />
+                  </div>
+                  <p className="mt-1.5 text-[10px] font-medium text-slate-400">By submitting, you agree to receive one SMS about the account approval decision.</p>
                 </div>
 
                 {/* Password */}

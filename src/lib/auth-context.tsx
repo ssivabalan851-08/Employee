@@ -3,8 +3,9 @@ import { LeaveBalance, UserProfile } from "../types.ts";
 import { DbService } from "./db-service.ts";
 import { supabaseAuth, SupabaseAuthUser } from "./supabase.ts";
 import { accountEmailHelp, isAllowedAccountEmail } from "./email-validation.ts";
+import { normalizeApplicantPhone } from "./phone-validation.ts";
 
-export interface SignUpDetails { email: string; password: string; name: string; department: string; title: string; requestedRole: "employee" | "manager"; }
+export interface SignUpDetails { email: string; password: string; name: string; phoneNumber: string; department: string; title: string; requestedRole: "employee" | "manager"; }
 
 interface AuthContextType {
   user: UserProfile | null; balances: LeaveBalance | null; token: string | null; loading: boolean; authError: string | null; authNotice: string | null;
@@ -51,13 +52,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithEmail = async (email: string, password: string, role: "employee" | "manager") => {
-    setLoading(true); setAuthError(null); setAuthNotice(null);
+    setAuthError(null); setAuthNotice(null);
+    let signedInUser: SupabaseAuthUser | null = null;
     try {
       const cleanEmail = email.trim().toLowerCase();
       if (!isAllowedAccountEmail(cleanEmail)) throw new Error(accountEmailHelp);
-      const authUser = await supabaseAuth.signInWithPassword(cleanEmail, password);
-      await beginSession(authUser, role);
+      signedInUser = await supabaseAuth.signInWithPassword(cleanEmail, password);
+      await beginSession(signedInUser, role);
     } catch (error: any) {
+      if (signedInUser && /waiting for administrator approval/i.test(error.message || "")) {
+        await supabaseAuth.requestAccountApproval(signedInUser.id).catch(() => undefined);
+      }
       await supabaseAuth.signOut().catch(() => undefined);
       setToken(null); setUser(null); setBalances(null);
       const message = /email not confirmed/i.test(error.message)
@@ -66,32 +71,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? "Invalid email or password. Please check your credentials or create a new account."
           : error.message || "Sign in failed.";
       setAuthError(message); throw new Error(message);
-    } finally { setLoading(false); }
+    }
   };
 
   const signUpWithEmail = async (details: SignUpDetails) => {
-    setLoading(true); setAuthError(null); setAuthNotice(null);
+    setAuthError(null); setAuthNotice(null);
     try {
       const email = details.email.trim().toLowerCase();
       const name = details.name.trim();
+      const phoneNumber = normalizeApplicantPhone(details.phoneNumber);
       if (!name || !email || details.password.length < 6) throw new Error("Enter your name, work email, and a password of at least 6 characters.");
       if (!isAllowedAccountEmail(email)) throw new Error(accountEmailHelp);
       const result = await supabaseAuth.signUp(email, details.password, {
         full_name: name,
+        phone_number: phoneNumber,
         department: details.department,
         title: details.title,
         requested_role: details.requestedRole,
       });
-      await supabaseAuth.requestAccountApproval(result.user.id);
-      if (result.hasSession) await supabaseAuth.signOut();
-      setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. Wait for the approval decision before signing in.`);
+      try {
+        await supabaseAuth.requestAccountApproval(result.user.id);
+        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. After approval, LeaveWise will send an SMS to ${phoneNumber}.`);
+      } catch {
+        setAuthNotice("Your account was created and is waiting for approval, but the administrator notification was delayed. Choose Sign In with the same credentials to retry the notification.");
+      } finally {
+        if (result.hasSession) await supabaseAuth.signOut();
+      }
     } catch (error: any) {
       const message = /already (been )?registered|already exists|email.*in use/i.test(error.message)
         ? "An account already exists for this email. Choose Sign In or use another email."
         : error.message || "Account creation failed.";
       setAuthError(message); throw new Error(message);
     }
-    finally { setLoading(false); }
   };
 
   const logout = async () => {

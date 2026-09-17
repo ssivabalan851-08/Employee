@@ -30,6 +30,7 @@ const profileFromRow = (r: any): UserProfile => ({
   role: r.role,
   department: r.department,
   title: r.title,
+  phoneNumber: r.phone_number || undefined,
   joinedDate: r.joined_date,
   createdAt: r.created_at,
   requestedRole: r.requested_role,
@@ -81,8 +82,7 @@ export const DbService = {
   async getProfileAndBalances(uid: string, email = "", name = "Employee", chosenRole?: "employee" | "manager") {
     let profileRow = await getOne<any>(`profiles?id=eq.${encode(uid)}&select=*`);
     if (!profileRow) {
-      const rows = await supabaseRequest<any[]>("profiles", { method: "POST", prefer: "return=representation", body: JSON.stringify({ id: uid, email, name, role: "employee", department: "Engineering", title: "Team Member" }) });
-      profileRow = rows[0];
+      throw new Error("This account is missing its employee profile. Contact the LeaveWise administrator to repair the account before signing in.");
     }
     let balanceRow = await getOne<any>(`leave_balances?user_id=eq.${encode(uid)}&select=*`);
     if (!balanceRow) {
@@ -90,8 +90,8 @@ export const DbService = {
       balanceRow = rows[0];
     }
     const user = profileFromRow(profileRow);
-    if (user.approvalStatus === "pending") {
-      throw new Error("Your account request is waiting for administrator approval. We will email you as soon as a decision is made.");
+    if (!user.approvalStatus || user.approvalStatus === "pending") {
+      throw new Error("Your account request is waiting for administrator approval. LeaveWise will send an SMS to your registered mobile number after approval.");
     }
     if (user.approvalStatus === "rejected") {
       throw new Error("This account request was not approved. Contact LeaveWise support if you need clarification.");

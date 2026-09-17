@@ -7,6 +7,7 @@ export interface UserProfile {
   role: UserRole;
   department: string;
   title: string;
+  phoneNumber?: string;
   joinedDate: string;
   createdAt: string;
   requestedRole?: UserRole;
