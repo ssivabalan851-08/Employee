@@ -2,7 +2,7 @@
 
 ## Result
 
-Every employee and HR registration creates a pending account. The administrator receives a branded email containing the applicant's name, email address, requested access, department, and job title. Approve and Reject links open a confirmation page before saving the decision. The applicant then receives a branded approval or rejection email.
+Every employee and HR registration creates a pending account. Supabase email confirmation is disabled, so no registration email is sent to the applicant. The administrator receives a branded email containing the applicant's name, email address, requested access, department, and job title. Approve and Reject links open a confirmation page before saving the decision. The applicant then receives a branded approval or rejection email.
 
 Existing accounts are marked approved when the migration is applied, so the change does not lock out current users.
 
@@ -42,11 +42,12 @@ Resend remains supported as an alternative for a company-owned domain. Its test 
 ## Deployment order
 
 1. Configure the contact settings and one email provider in Supabase.
-2. Deploy `supabase/functions/account-approval` with JWT verification disabled as specified by `supabase/config.toml`. The function performs its own validation because unconfirmed sign-ups do not yet have a session token.
+2. Deploy `supabase/functions/account-approval` with JWT verification disabled as specified by `supabase/config.toml`. The function validates each request against the private approval table.
 3. Run `supabase/migrations/202609160001_account_approval.sql` in the Supabase SQL editor.
-4. Deploy the web application.
-5. Create one employee test account and one HR test account.
-6. Confirm that the administrator email arrives, that its review link opens a confirmation page, and that the applicant receives the correct decision email.
+4. In **Authentication → Sign In / Providers**, turn **Confirm email** off. Administrator approval remains mandatory and replaces applicant email confirmation.
+5. Deploy the web application.
+6. Create one employee test account and one HR test account.
+7. Confirm that the administrator email arrives, that its review link opens a confirmation page, and that the applicant receives the correct decision email.
 
 This order keeps the existing production sign-in flow available until email delivery is ready.
 

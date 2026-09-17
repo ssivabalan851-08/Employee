@@ -2,7 +2,7 @@
 
 Public registration creates employee accounts only. Manager access must be granted by an authorized Supabase project administrator.
 
-1. Ask the manager to create an account through the Employee portal and confirm their email.
+1. Ask the manager to create an account through the HR portal and wait for administrator approval.
 2. In the Supabase dashboard, open **SQL Editor**.
 3. Run the following statement with the manager's exact verified email:
 

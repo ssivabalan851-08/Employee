@@ -31,7 +31,7 @@ The local app starts at `http://localhost:3001`.
 
 ## Account approval
 
-New employee and HR accounts start in a pending state. LeaveWise emails the configured administrator a review link, and the applicant receives the final approval or rejection by email. HR access is assigned only when an HR request is approved.
+New employee and HR accounts start in a pending state without a separate applicant email-confirmation step. LeaveWise emails the configured administrator a review link, and the applicant receives the final approval or rejection by email. HR access is assigned only when an HR request is approved.
 
 Follow [docs/ACCOUNT_APPROVAL_SETUP.md](docs/ACCOUNT_APPROVAL_SETUP.md) to configure the mail sender, deploy the Edge Function, and activate the database migration.
 

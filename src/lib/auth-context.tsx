@@ -12,7 +12,6 @@ interface AuthContextType {
   signInWithGoogle: (role: "employee" | "manager") => Promise<void>;
   signInWithEmail: (email: string, password: string, role: "employee" | "manager") => Promise<void>;
   signUpWithEmail: (details: SignUpDetails) => Promise<void>;
-  resendConfirmation: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   updateRoleAndProfile: (updates: { name?: string; department?: string; title?: string }) => Promise<void>;
   refreshProfile: (uid?: string, role?: "employee" | "manager") => Promise<void>;
@@ -62,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabaseAuth.signOut().catch(() => undefined);
       setToken(null); setUser(null); setBalances(null);
       const message = /email not confirmed/i.test(error.message)
-        ? "Your account exists, but the email address is not confirmed. Open the Supabase confirmation email, confirm the account, then sign in again."
+        ? "This account is not ready for access. Submit a new account request or contact the LeaveWise administrator."
         : /invalid login credentials/i.test(error.message)
           ? "Invalid email or password. Please check your credentials or create a new account."
           : error.message || "Sign in failed.";
@@ -85,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       await supabaseAuth.requestAccountApproval(result.user.id);
       if (result.hasSession) await supabaseAuth.signOut();
-      setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. Confirm your email and wait for the approval decision email before signing in.`);
+      setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. Wait for the approval decision before signing in.`);
     } catch (error: any) {
       const message = /already (been )?registered|already exists|email.*in use/i.test(error.message)
         ? "An account already exists for this email. Choose Sign In or use another email."
@@ -93,23 +92,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuthError(message); throw new Error(message);
     }
     finally { setLoading(false); }
-  };
-
-  const resendConfirmation = async (email: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) {
-      const message = "Enter your email address first, then request a new confirmation email.";
-      setAuthError(message);
-      throw new Error(message);
-    }
-    setLoading(true); setAuthError(null); setAuthNotice(null);
-    try {
-      await supabaseAuth.resendSignUpConfirmation(cleanEmail);
-      setAuthNotice("A fresh confirmation email was requested. Open it and confirm your account before signing in.");
-    } catch (error: any) {
-      const message = error.message || "The confirmation email could not be resent. Please try again shortly.";
-      setAuthError(message); throw new Error(message);
-    } finally { setLoading(false); }
   };
 
   const logout = async () => {
@@ -134,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearAuthStatus = () => { setAuthError(null); setAuthNotice(null); };
 
-  return <AuthContext.Provider value={{ user, balances, token, loading, authError, authNotice, clearAuthStatus, signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, logout, updateRoleAndProfile, refreshProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, balances, token, loading, authError, authNotice, clearAuthStatus, signInWithGoogle, signInWithEmail, signUpWithEmail, logout, updateRoleAndProfile, refreshProfile }}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
