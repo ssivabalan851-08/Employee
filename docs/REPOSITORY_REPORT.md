@@ -1,70 +1,129 @@
-# Repository and Supabase migration report
+# LeaveWise repository and deployment report
+
+## Current status
+
+LeaveWise is a public employee leave management application with separate Employee and HR/Admin workspaces. The production site is:
+
+https://employee-leave-portal.ssivabalan851.chatgpt.site
+
+The application uses Supabase for authentication, profiles, leave data, account approval requests, and audit records. The current Sites production deployment is version 12.
 
 ## Product scope
 
-The Enterprise Leave Portal provides two role-specific entry points. Employees can create accounts, sign in, view allowances, submit and cancel requests, read notifications, inspect activity, and export personal reports. Managers can review requests, process cancellations, inspect staff records and statistics, edit allowances, and export organization reports.
+Employees can create an account request, sign in after approval, view leave balances, submit and cancel leave requests, read notifications, inspect activity, and export personal reports.
 
-## Architecture
+HR users can request an HR account, sign in after approval, review leave requests, process cancellations, inspect staff records and statistics, edit allowances, and export organization reports.
 
-The browser application is React 19 with TypeScript, Vite, Tailwind CSS, and Lucide icons. `server.ts` serves the production bundle. Authentication and all durable application data now use Supabase over HTTPS.
+The selected workspace is kept stable. Choosing HR and then switching between Create New Account and Sign In remains in the HR flow. The same behavior applies to Employee.
+
+## Technology and architecture
 
 | Area | Implementation |
 | --- | --- |
-| Authentication | Supabase email/password and optional Google OAuth |
-| Profiles | `public.profiles` linked to `auth.users` |
-| Allowances | `public.leave_balances`, one row per user |
-| Requests | `public.leave_requests` with constrained types and statuses |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, Lucide icons |
+| Authentication | Supabase email/password |
+| Profiles | `public.profiles`, linked to `auth.users` |
+| Account approvals | `public.account_approval_requests` plus the `account-approval` Supabase Edge Function |
+| Leave balances | `public.leave_balances`, one row per user |
+| Leave requests | `public.leave_requests` with constrained types and statuses |
 | Notifications | `public.notifications`, visible only to their owner |
 | History | Append-only `public.audit_logs` |
-| Privileged changes | Transactional Postgres functions with manager checks |
+| Privileged changes | Transactional PostgreSQL functions with manager checks |
+| Email delivery | Brevo transactional email to the configured administrator only |
+| Approval SMS | Brevo transactional SMS to the applicant's registered mobile number |
+| Hosting | OpenAI Sites static deployment |
 | Browser sessions | Memory only; every new page visit starts signed out |
+
+## Account creation and approval flow
+
+1. The applicant selects Employee Portal or HR & Admin Portal.
+2. Create New Account asks for full name, email, mobile number, password, department, and job title.
+3. Indian local mobile formats and `+91` formats are normalized to E.164 before storage. Other valid international E.164 numbers are accepted.
+4. Supabase creates the authentication identity and the database trigger creates the profile and leave balances.
+5. The account remains pending. The Edge Function creates or repairs the approval request and sends an approval email only to `ADMIN_APPROVAL_EMAIL`.
+6. The administrator uses the Approve or Reject action in the email.
+7. Approval changes the user's profile to active. HR requests receive the manager role; Employee requests receive the employee role.
+8. After approval, the Edge Function sends a short SMS to the registered applicant mobile number. It does not send an applicant decision email.
+9. The applicant signs in through the same portal that was selected during registration.
+
+Supabase email confirmation is disabled for this project, so a new applicant does not need to confirm an email address. The application also does not send its own confirmation email to the applicant.
+
+## Failure handling
+
+- A duplicate signup reports that the account already exists and directs the person to sign in.
+- A pending user who signs in causes the application to retry the administrator notification when needed.
+- Browser requests cannot read or modify the private approval queue directly.
+- The Edge Function uses the service role for approval records and profile activation.
+- If the administrator email cannot be sent, the account stays pending and can be retried.
+- If approval succeeds but SMS delivery fails, approval remains saved. Reopening the approval link retries the SMS and stores the latest provider error for support.
+
+## Database migrations
+
+The initial schema is `supabase/migrations/202609150001_initial_schema.sql`.
+
+The approval and SMS update is `supabase/migrations/202609170001_account_approval_sms.sql`. It:
+
+- adds `profiles.phone_number`;
+- adds E.164 validation;
+- adds approval SMS audit columns;
+- repairs pending approval rows;
+- grants the required approval-table access to `service_role` while keeping browser roles blocked;
+- updates `handle_new_user()` so the applicant mobile number is stored from signup metadata.
+
+Future database changes should use a new timestamped migration. Do not rewrite a migration that has already been applied in production.
 
 ## Security controls
 
-Every application table has row-level security enabled. Employees can read only their own profile, balances, requests, notifications, and audit entries. Managers can read organization records. New accounts always receive the employee role.
+Every application table has row-level security enabled. Employees can read their own profile, balances, requests, notifications, and audit entries. HR users can read the organization records required by their workspace.
 
-The browser cannot directly approve a request, reject it, process a cancellation, or change balances. Those operations use `security definer` database functions that verify `auth.uid()` belongs to a manager and update all related records in one transaction. A trigger blocks employees from changing their role.
+The browser cannot directly approve an account, reject a request, process a cancellation, or change leave balances. Privileged operations run in database functions or the Edge Function and verify the caller or approval token.
 
-The client uses only the Supabase publishable key. The service-role key must remain outside the repository and browser environment.
+The frontend uses only the Supabase publishable key. The Supabase service-role key and Brevo API key are stored as Supabase Edge Function secrets and must never be placed in frontend code, repository files, browser storage, or screenshots.
 
-## Database lifecycle
+## Where data can be inspected
 
-The initial migration is `supabase/migrations/202609150001_initial_schema.sql`. It creates types, tables, indexes, triggers, RLS policies, grants, and the following workflow functions:
+- Authentication identities: Supabase Dashboard > Authentication > Users.
+- User name, role, approval status, and phone: Table Editor > `profiles`.
+- Pending and completed account requests: Table Editor > `account_approval_requests`.
+- SMS delivery status: the `approval_sms_*` columns in `account_approval_requests`.
+- Approval function activity: Edge Functions > `account-approval` > Logs.
+- Leave data: `leave_balances`, `leave_requests`, `notifications`, and `audit_logs`.
 
-- `submit_leave_request`
-- `process_leave_request`
-- `withdraw_leave_request`
-- `request_leave_cancellation`
-- `process_leave_cancellation`
-- `update_employee_balance`
+Supabase never displays user passwords. Passwords are managed by Supabase Auth and stored as secure hashes.
 
-Apply migrations through the Supabase SQL editor or CLI before connecting a deployed build. Future schema changes should be new timestamped migration files; do not edit an already-applied production migration.
+## Required service configuration
 
-## Authentication behavior
+The `account-approval` Edge Function expects these secrets:
 
-The Supabase client keeps access tokens in JavaScript memory. It does not restore a previous account from local storage. Google OAuth temporarily keeps only the selected portal role in tab-scoped session storage so the role can be checked after the redirect. Closing the tab removes it.
+- `ADMIN_APPROVAL_EMAIL`
+- `BREVO_API_KEY`
+- `BREVO_SMS_SENDER` (optional; defaults to `LeaveWise`)
+- Supabase-provided `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`
 
-The production URL must appear in Supabase Authentication URL Configuration. Google sign-in also requires a Google OAuth client configured with the Supabase callback URL shown by the dashboard.
+Brevo SMS delivery also requires SMS credit and an approved Sender ID where required by the destination country. Missing credit or Sender ID configuration does not undo account approval; it is recorded as an SMS delivery error.
 
-## Branding
+## Validation completed
 
-The new brand mark combines a calendar and approval check in an indigo-to-cyan gradient. It appears on the login page, authenticated header, printable approval statement, and browser favicon. The mark remains legible at small sizes and uses accessible SVG markup.
+- TypeScript type checking passed.
+- The production Vite build passed.
+- The production archive was created from the exact pushed Sites commit.
+- Migration verification returned `true` for the phone column, SMS audit columns, and `service_role` approval-table permission.
+- The `account-approval` Edge Function was deployed successfully.
+- Sites version 12 was deployed successfully with public access preserved.
+- The live Employee signup form includes the mobile-number field.
+- The live HR signup form includes the same account details and remains in HR mode.
+- The live HR sign-in form remains selected after switching from HR signup.
+- Supabase Auth shows email confirmation disabled.
 
-## Removed legacy paths
+## Operational test procedure
 
-Firebase Authentication, Firestore configuration, rules, client code, administrator scripts, connection tests, browser demo records, demo accounts, and sample-data controls have been removed. The app has one production data path: Supabase.
+1. Open the production URL in a private browser window.
+2. Select Employee Portal and create a test account with a reachable mobile number.
+3. Confirm that only the administrator mailbox receives the approval email.
+4. Open the approval link and approve the request.
+5. Confirm that the applicant phone receives the approval SMS.
+6. Sign in through Employee Portal and submit a leave request.
+7. Repeat with an HR account and confirm that the approved account opens the HR workspace.
+8. Review `account_approval_requests` and Edge Function logs if an email or SMS is delayed.
 
-## Deployment checklist
-
-1. Create or select the Supabase project.
-2. Apply the SQL migration.
-3. Set the Site URL and allowed redirect URL.
-4. Copy the project URL and publishable key into the build environment.
-5. Enable email sign-in and configure Google if required.
-6. Build and deploy the application.
-7. Register one employee account, then grant the intended HR user the manager role using `docs/MANAGER_PROVISIONING.md`.
-8. Verify employee submission, manager approval, balance adjustment, cancellation, notification, and CSV exports.
-
-## Validation status
-
-TypeScript checking and the production Vite build pass locally. Live sign-in and database workflow validation require the Supabase project, applied migration, and connection values.
+Do not use a production employee's email or phone number for testing without their consent.

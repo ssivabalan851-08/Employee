@@ -7,6 +7,7 @@ import { BrandLogo } from "./components/BrandLogo.tsx";
 const LoginScreen = lazy(() => import("./components/LoginScreen.tsx").then(module => ({ default: module.LoginScreen })));
 const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx").then(module => ({ default: module.EmployeeDashboard })));
 const ManagerDashboard = lazy(() => import("./components/ManagerDashboard.tsx").then(module => ({ default: module.ManagerDashboard })));
+const AccountApprovalPage = lazy(() => import("./components/AccountApprovalPage.tsx").then(module => ({ default: module.AccountApprovalPage })));
 
 const LoadingScreen = () => (
   <div className="min-h-screen leavewise-loading flex items-center justify-center">
@@ -103,6 +104,14 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
+  if (window.location.pathname.replace(/\/+$/, "") === "/account-approval") {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <AccountApprovalPage />
+      </Suspense>
+    );
+  }
+
   return (
     <AuthProvider>
       <Suspense fallback={<LoadingScreen />}>

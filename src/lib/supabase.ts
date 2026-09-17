@@ -10,6 +10,13 @@ export interface SupabaseAuthUser {
   user_metadata?: Record<string, unknown>;
 }
 
+export interface AccountApprovalResult {
+  ok: boolean;
+  title: string;
+  message: string;
+  kind: "success" | "warning" | "error";
+}
+
 function configurationError() {
   return new Error("Supabase is not connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the site environment.");
 }
@@ -65,6 +72,14 @@ export const supabaseAuth = {
       body: JSON.stringify({ action: "request", user_id: userId }),
     });
     await parseResponse(response);
+  },
+  async decideAccountApproval(token: string, decision: "approve" | "reject") {
+    const response = await fetch(`${supabaseUrl}/functions/v1/account-approval`, {
+      method: "POST",
+      headers: authHeaders(null),
+      body: JSON.stringify({ action: "decide", token, decision }),
+    });
+    return parseResponse(response) as Promise<AccountApprovalResult>;
   },
   signInWithGoogle() {
     if (!supabaseUrl || !supabaseKey) throw configurationError();
