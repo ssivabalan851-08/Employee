@@ -29,6 +29,12 @@ const escapeHtml = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;",
 }[character] || character));
 
+type ApprovalDecision = "approve" | "reject";
+
+function parseApprovalDecision(value: string | null): ApprovalDecision | null {
+  return value === "approve" || value === "reject" ? value : null;
+}
+
 async function sha256(value: string) {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -114,20 +120,20 @@ function resultPage(title: string, message: string, kind: "success" | "warning" 
   return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><div style="width:48px;height:48px;border-radius:50%;background:${color};color:white;font-size:28px;line-height:48px;text-align:center">${kind === "success" ? "✓" : "!"}</div><h1 style="margin:20px 0 10px">${escapeHtml(title)}</h1><p style="line-height:1.7;color:#476764">${escapeHtml(message)}</p><a href="${SITE_URL}" style="display:inline-block;margin-top:16px;background:#063b39;color:white;padding:12px 18px;border-radius:9px;text-decoration:none;font-weight:700">Open LeaveWise</a></div></main></body></html>`, { status: kind === "error" ? 400 : 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
-function confirmationPage(token: string, decision: string) {
-  const approving = decision === "approve";
+function confirmationPage(token: string, requestedDecision: ApprovalDecision) {
+  const approving = requestedDecision === "approve";
   const label = approving ? "Approve account" : "Reject account";
   const color = approving ? "#087d78" : "#be123c";
-  return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${label}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><h1>Confirm your decision</h1><p style="line-height:1.7;color:#476764">Select the button below to ${approving ? "approve this account and grant the requested access. LeaveWise will send one SMS to the applicant's registered mobile number" : "reject this account request. No applicant email will be sent"}.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="decision" value="${escapeHtml(decision)}"><button type="submit" style="border:0;background:${color};color:white;padding:13px 20px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">${label}</button></form></div></main></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+  return new Response(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${label}</title></head><body style="margin:0;background:#eef7f6;padding:48px 16px;font-family:Arial,sans-serif;color:#0f2f2d"><main style="max-width:580px;margin:auto;background:#fff;border:1px solid #cfe4e1;border-radius:20px;overflow:hidden;box-shadow:0 18px 50px rgba(6,59,57,.12)"><div style="background:#063b39;padding:24px;text-align:center"><img src="${SITE_URL}/leavewise-logo.png" alt="LeaveWise" width="180"></div><div style="padding:34px"><h1>Confirm your decision</h1><p style="line-height:1.7;color:#476764">Select the button below to ${approving ? "approve this account and grant the requested access. LeaveWise will send one SMS to the applicant's registered mobile number" : "reject this account request. No applicant email will be sent"}.</p><form method="post"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="decision" value="${requestedDecision}"><button type="submit" style="border:0;background:${color};color:white;padding:13px 20px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer">${label}</button></form></div></main></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
-async function handleDecision(token: string, decision: string) {
-  if (!/^[0-9a-f-]{36}$/i.test(token) || !["approve", "reject"].includes(decision)) return resultPage("Invalid approval link", "This approval link is incomplete or invalid.", "error");
+async function handleDecision(token: string, requestedDecision: ApprovalDecision) {
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return resultPage("Invalid approval link", "This approval link is incomplete or invalid.", "error");
   const tokenHash = await sha256(token);
   const rows = await json(await fetch(`${SUPABASE_URL}/rest/v1/account_approval_requests?approval_token_hash=eq.${tokenHash}&select=user_id,decision,approval_sms_sent_at,profiles!inner(email,name,phone_number,requested_role,approval_status)`, { headers: serviceHeaders }));
   const request = rows?.[0];
   if (!request) return resultPage("Approval link not found", "This link is invalid or no longer available.", "error");
-  const approved = decision === "approve";
+  const approved = requestedDecision === "approve";
   const finalDecision = approved ? "approved" : "rejected";
   if (request.decision && request.decision !== finalDecision) return resultPage("Request already processed", `This account request was already ${request.decision}.`, "warning");
 
@@ -173,16 +179,18 @@ Deno.serve(async (request) => {
     const url = new URL(request.url);
     if (request.method === "GET") {
       const token = url.searchParams.get("token") || "";
-      const decision = url.searchParams.get("decision") || "";
-      if (!/^[0-9a-f-]{36}$/i.test(token) || !["approve", "reject"].includes(decision)) return resultPage("Invalid approval link", "This approval link is incomplete or invalid.", "error");
-      return confirmationPage(token, decision);
+      const requestedDecision = parseApprovalDecision(url.searchParams.get("decision"));
+      if (!/^[0-9a-f-]{36}$/i.test(token) || !requestedDecision) return resultPage("Invalid approval link", "This approval link is incomplete or invalid.", "error");
+      return confirmationPage(token, requestedDecision);
     }
     if (request.method !== "POST") return Response.json({ error: "Method not allowed" }, { status: 405, headers: corsHeaders });
 
     const contentType = request.headers.get("content-type") || "";
     if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
       const form = await request.formData();
-      return await handleDecision(String(form.get("token") || ""), String(form.get("decision") || ""));
+      const requestedDecision = parseApprovalDecision(String(form.get("decision") || ""));
+      if (!requestedDecision) return resultPage("Invalid approval link", "This approval link is incomplete or invalid.", "error");
+      return await handleDecision(String(form.get("token") || ""), requestedDecision);
     }
 
     const body = await request.json();
