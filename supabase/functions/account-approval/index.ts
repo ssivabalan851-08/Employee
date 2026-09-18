@@ -134,7 +134,7 @@ function buildWhatsAppUrl(phoneNumber: string, applicantName: string) {
   if (!/^\+[1-9][0-9]{7,14}$/.test(phoneNumber)) return undefined;
   const contactDetails = [CONTACT_EMAIL, CONTACT_PHONE].filter(Boolean).join(" or ");
   const support = contactDetails ? ` If you need help, contact ${contactDetails}.` : "";
-  const message = `Hello ${applicantName || "there"}, your LeaveWise account has been approved. You can now sign in with your registered email.${support}`;
+  const message = `Hello ${applicantName || "there"}, your LeaveWise account has been approved. You can now sign in with your registered email at ${SITE_URL}.${support}`;
   return `https://wa.me/${phoneNumber.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
 }
 
