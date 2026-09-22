@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { LeaveRequest, LeaveStatistics, LeaveType, LeaveStatus, UserProfile } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
+import { DraggableStatCard } from "./DraggableStatCard.tsx";
 
 export const ManagerDashboard: React.FC = () => {
   const { user, token, refreshProfile } = useAuth();
@@ -304,7 +305,7 @@ export const ManagerDashboard: React.FC = () => {
         <>
           {/* Key Metric Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
+            <DraggableStatCard className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Action</span>
                 <div className="h-8 w-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -313,9 +314,9 @@ export const ManagerDashboard: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats?.pendingCount}</h3>
               <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">Leave requests awaiting decision</p>
-            </div>
+            </DraggableStatCard>
 
-            <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
+            <DraggableStatCard className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Approved</span>
                 <div className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -324,9 +325,9 @@ export const ManagerDashboard: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats?.approvedCount}</h3>
               <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">Approved absences logged this year</p>
-            </div>
+            </DraggableStatCard>
 
-            <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
+            <DraggableStatCard className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Employee Staff roster</span>
                 <div className="h-8 w-8 rounded-lg bg-slate-50 text-slate-600 flex items-center justify-center">
@@ -335,9 +336,9 @@ export const ManagerDashboard: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{employees.length}</h3>
               <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">Registered corporate users</p>
-            </div>
+            </DraggableStatCard>
 
-            <div className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
+            <DraggableStatCard className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Top Absence Type</span>
                 <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center">
@@ -346,7 +347,7 @@ export const ManagerDashboard: React.FC = () => {
               </div>
               <h3 className="text-sm font-bold text-slate-900 capitalize tracking-tight mt-1">{maxUsedType[0]} Leave</h3>
               <p className="text-[10px] text-slate-400 mt-1 font-semibold">({maxUsedType[1]} approved days taken)</p>
-            </div>
+            </DraggableStatCard>
           </div>
 
           {/* Visual Analytics & Statistics */}

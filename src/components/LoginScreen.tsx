@@ -16,6 +16,7 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
+import { ThemeToggle } from "./ThemeToggle.tsx";
 import { accountEmailHelp, accountEmailPattern } from "../lib/email-validation.ts";
 import { applicantPhoneHelp } from "../lib/phone-validation.ts";
 
@@ -118,6 +119,7 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden leavewise-login">
+      <ThemeToggle floating />
       
       {/* Decorative corporate ambient background glow */}
       <div className="leavewise-login-orb leavewise-login-orb--one" />

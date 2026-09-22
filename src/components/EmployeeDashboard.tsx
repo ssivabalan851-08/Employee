@@ -22,6 +22,7 @@ import {
 import { LeaveType, LeaveRequest, LeaveStatus } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
 import { BrandLogo } from "./BrandLogo.tsx";
+import { DraggableStatCard } from "./DraggableStatCard.tsx";
 
 export const EmployeeDashboard: React.FC = () => {
   const { user, balances, token, refreshProfile } = useAuth();
@@ -293,7 +294,7 @@ export const EmployeeDashboard: React.FC = () => {
             const style = typeMap[type];
 
             return (
-              <div key={type} className={`rounded-xl border p-5 flex flex-col justify-between bg-white ${style.bg} shadow-sm transition-all hover:shadow-md hover:translate-y-[-1px] duration-250`}>
+              <DraggableStatCard key={type} className={`rounded-xl border p-5 flex flex-col justify-between bg-white ${style.bg} shadow-sm transition-all hover:shadow-md duration-250`}>
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md ${style.text} bg-white border border-slate-200/60`}>
@@ -312,7 +313,7 @@ export const EmployeeDashboard: React.FC = () => {
                   <span>{cat.used} used</span>
                   <span>{cat.total} total allowance</span>
                 </div>
-              </div>
+              </DraggableStatCard>
             );
           })}
         </div>

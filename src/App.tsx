@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./lib/auth-context.tsx";
 import { NotificationCenter } from "./components/NotificationCenter.tsx";
 import { CalendarDays, LogOut } from "lucide-react";
 import { BrandLogo } from "./components/BrandLogo.tsx";
+import { ThemeToggle } from "./components/ThemeToggle.tsx";
 
 const LoginScreen = lazy(() => import("./components/LoginScreen.tsx").then(module => ({ default: module.LoginScreen })));
 const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx").then(module => ({ default: module.EmployeeDashboard })));
@@ -58,6 +59,8 @@ const MainLayout: React.FC = () => {
 
               {/* In-app Notification center */}
               <NotificationCenter token={token} />
+
+              <ThemeToggle />
 
               <div className="h-6 w-[1px] bg-slate-200" />
 
