@@ -51,12 +51,12 @@ export const AccountApprovalPage: React.FC = () => {
   const accent = displayedResult?.kind === "success" ? "text-emerald-700 bg-emerald-50 border-emerald-200" : displayedResult?.kind === "warning" ? "text-amber-700 bg-amber-50 border-amber-200" : "text-rose-700 bg-rose-50 border-rose-200";
 
   return (
-    <main className="min-h-screen bg-[#edf7f5] px-4 py-10 sm:py-16 flex items-center justify-center font-sans leavewise-approval">
+    <main className="min-h-screen bg-[#f5f7fc] px-4 py-10 sm:py-16 flex items-center justify-center font-sans leavewise-approval">
       <ThemeToggle floating />
       <section className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(14,31,59,0.14)]">
-        <header className="bg-[#172a4a] px-6 py-8 text-center leavewise-approval-header">
+        <header className="bg-[#312e81] px-6 py-8 text-center leavewise-approval-header">
           <BrandLogo className="mx-auto" />
-          <p className="mt-4 text-xs font-bold tracking-[0.2em] text-[#ffd08a]">SECURE ACCOUNT APPROVAL</p>
+          <p className="mt-4 text-xs font-bold tracking-[0.2em] text-[#ddd6fe]">SECURE ACCOUNT APPROVAL</p>
         </header>
 
         <div className="px-6 py-8 sm:px-10 sm:py-10">
@@ -78,16 +78,16 @@ export const AccountApprovalPage: React.FC = () => {
                   Send approval in WhatsApp
                 </a>
               )}
-              <a href="/" className={`${displayedResult.whatsapp_url ? "mt-3" : "mt-7"} inline-flex min-h-12 items-center justify-center rounded-xl bg-[#172a4a] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#0d1b35]`}>
+              <a href="/" className={`${displayedResult.whatsapp_url ? "mt-3" : "mt-7"} inline-flex min-h-12 items-center justify-center rounded-xl bg-[#312e81] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#7c3aed]`}>
                 Open LeaveWise
               </a>
             </div>
           ) : (
             <div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-800">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl leavewise-approval-emblem">
                 <ShieldCheck className="h-6 w-6" />
               </div>
-              <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-amber-800">Administrator decision</p>
+              <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] leavewise-approval-kicker">Administrator decision</p>
               <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
                 {approving ? "Approve this account?" : "Reject this account?"}
               </h1>
@@ -103,7 +103,7 @@ export const AccountApprovalPage: React.FC = () => {
                 type="button"
                 onClick={submitDecision}
                 disabled={submitting}
-                className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${approving ? "bg-[#253e67] hover:bg-[#35537f]" : "bg-rose-700 hover:bg-rose-800"}`}
+                className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${approving ? "bg-[#4338ca] hover:bg-[#6d28d9]" : "bg-rose-700 hover:bg-rose-800"}`}
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : approving ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
                 {submitting ? "Processing decision..." : approving ? "Confirm account approval" : "Confirm account rejection"}

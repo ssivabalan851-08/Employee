@@ -16,7 +16,7 @@ export function currentTheme(): Theme {
 export function applyTheme(theme: Theme, remember = false): void {
   document.documentElement.dataset.theme = theme;
   document.documentElement.style.colorScheme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0b1426" : "#f4f6fb");
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0d1324" : "#f5f7fc");
   if (remember) {
     // Authentication clears localStorage on startup, so keep this visual choice in a cookie.
     document.cookie = `${COOKIE_NAME}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;

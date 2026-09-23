@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { flushSync } from "react-dom";
 import { applyTheme, currentTheme } from "../lib/theme.ts";
 
 export const ThemeToggle: React.FC<{ floating?: boolean }> = ({ floating = false }) => {
@@ -13,9 +14,19 @@ export const ThemeToggle: React.FC<{ floating?: boolean }> = ({ floating = false
       aria-label={`Switch to ${nextTheme} mode`}
       aria-pressed={theme === "dark"}
       title={`Switch to ${nextTheme} mode`}
-      onClick={() => {
-        applyTheme(nextTheme, true);
-        setTheme(nextTheme);
+      onClick={(event) => {
+        const switchTheme = () => flushSync(() => {
+          applyTheme(nextTheme, true);
+          setTheme(nextTheme);
+        });
+        if (document.startViewTransition && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          const bounds = event.currentTarget.getBoundingClientRect();
+          document.documentElement.style.setProperty("--lw-theme-x", `${bounds.left + bounds.width / 2}px`);
+          document.documentElement.style.setProperty("--lw-theme-y", `${bounds.top + bounds.height / 2}px`);
+          document.startViewTransition(switchTheme);
+        } else {
+          switchTheme();
+        }
       }}
     >
       {theme === "light" ? <Moon aria-hidden="true" size={17} /> : <Sun aria-hidden="true" size={17} />}
