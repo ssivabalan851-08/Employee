@@ -78,7 +78,7 @@ export const AccountApprovalPage: React.FC = () => {
                   Send approval in WhatsApp
                 </a>
               )}
-              <a href="/" className={`${displayedResult.whatsapp_url ? "mt-3" : "mt-7"} inline-flex min-h-12 items-center justify-center rounded-xl bg-[#312e81] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#7c3aed]`}>
+              <a href="/login" className={`${displayedResult.whatsapp_url ? "mt-3" : "mt-7"} leavewise-approval-login-link inline-flex min-h-12 items-center justify-center rounded-xl bg-[#312e81] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#7c3aed]`}>
                 Open LeaveWise
               </a>
             </div>

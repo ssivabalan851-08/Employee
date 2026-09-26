@@ -21,6 +21,9 @@ import { accountEmailHelp, accountEmailPattern } from "../lib/email-validation.t
 import { applicantPhoneHelp } from "../lib/phone-validation.ts";
 
 export const LoginScreen: React.FC = () => {
+  const query = new URLSearchParams(window.location.search);
+  const initialRole = query.get("role") === "manager" ? "manager" : "employee";
+  const initialMode = query.get("mode") === "signup" ? "signup" : "signin";
   const googleAuthEnabled = import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
   const { 
     signInWithGoogle, 
@@ -32,10 +35,10 @@ export const LoginScreen: React.FC = () => {
   } = useAuth();
   
   // Categorized Portal Gateway: "employee" | "manager"
-  const [activeRole, setActiveRole] = useState<"employee" | "manager">("employee");
+  const [activeRole, setActiveRole] = useState<"employee" | "manager">(initialRole);
 
   // Mode: "signin" | "signup"
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">(initialMode);
 
   // Sign In Form States
   const [signInEmail, setSignInEmail] = useState("");

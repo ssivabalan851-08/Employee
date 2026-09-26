@@ -711,8 +711,8 @@ textarea:focus-visible,
   background: linear-gradient(120deg, #312e81, #1e1b4b) !important;
 }
 .leavewise-approval-header p { color: #9ef7e9 !important; }
-.leavewise-approval a[href="/"] { background: #312e81 !important; }
-.leavewise-approval a[href="/"]:hover { background: #1e1b4b !important; }
+.leavewise-approval-login-link { background: #312e81 !important; }
+.leavewise-approval-login-link:hover { background: #1e1b4b !important; }
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) { background: #4338ca !important; }
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle):hover { background: #6d28d9 !important; }
 .leavewise-approval a[href*="whatsapp"] { background: #25d366 !important; }
@@ -839,8 +839,8 @@ textarea:focus-visible,
 :root[data-theme="dark"] .leavewise-approval :is(.bg-white, .bg-slate-50) { background: var(--lw-surface-soft) !important; }
 :root[data-theme="dark"] .leavewise-approval > section.bg-white { background: var(--lw-surface) !important; }
 :root[data-theme="dark"] .leavewise-approval .leavewise-approval-header { background: linear-gradient(120deg, #312e81, #1e1b4b) !important; }
-:root[data-theme="dark"] .leavewise-approval a[href="/"] { background: #4338ca !important; }
-:root[data-theme="dark"] .leavewise-approval a[href="/"]:hover { background: #6d28d9 !important; }
+:root[data-theme="dark"] .leavewise-approval-login-link { background: #4338ca !important; }
+:root[data-theme="dark"] .leavewise-approval-login-link:hover { background: #6d28d9 !important; }
 
 /* Status colors retain their meaning and contrast on dark surfaces. */
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) [class*="bg-emerald-50"] { background-color: #173b35 !important; }
@@ -923,7 +923,7 @@ textarea:focus-visible,
 .leavewise-auth-card button[type="submit"],
 .leavewise-dashboard button.bg-slate-900,
 .leavewise-dashboard button.bg-teal-600,
-.leavewise-approval a[href="/"],
+.leavewise-approval-login-link,
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) {
   background-image: var(--lw-brand-gradient) !important;
   background-size: 135% 135%;
@@ -935,7 +935,7 @@ textarea:focus-visible,
 .leavewise-auth-card button[type="submit"],
 .leavewise-dashboard button.bg-slate-900,
 .leavewise-dashboard button.bg-teal-600,
-.leavewise-approval a[href="/"],
+.leavewise-approval-login-link,
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) {
   color: white !important;
 }
@@ -958,7 +958,7 @@ textarea:focus-visible,
   .leavewise-auth-card button[type="submit"]:hover,
   .leavewise-dashboard button.bg-slate-900:hover,
   .leavewise-dashboard button.bg-teal-600:hover,
-  .leavewise-approval a[href="/"]:hover,
+  .leavewise-approval-login-link:hover,
   .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle):hover {
     background-position: 100% 50%;
   }

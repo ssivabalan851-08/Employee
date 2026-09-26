@@ -9,6 +9,7 @@ const LoginScreen = lazy(() => import("./components/LoginScreen.tsx").then(modul
 const EmployeeDashboard = lazy(() => import("./components/EmployeeDashboard.tsx").then(module => ({ default: module.EmployeeDashboard })));
 const ManagerDashboard = lazy(() => import("./components/ManagerDashboard.tsx").then(module => ({ default: module.ManagerDashboard })));
 const AccountApprovalPage = lazy(() => import("./components/AccountApprovalPage.tsx").then(module => ({ default: module.AccountApprovalPage })));
+const LandingPage = lazy(() => import("./components/LandingPage.tsx").then(module => ({ default: module.LandingPage })));
 
 const LoadingScreen = () => (
   <div className="min-h-screen leavewise-loading flex items-center justify-center">
@@ -107,10 +108,20 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
-  if (window.location.pathname.replace(/\/+$/, "") === "/account-approval") {
+  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+
+  if (pathname === "/account-approval") {
     return (
       <Suspense fallback={<LoadingScreen />}>
         <AccountApprovalPage />
+      </Suspense>
+    );
+  }
+
+  if (pathname === "/") {
+    return (
+      <Suspense fallback={<LoadingScreen />}>
+        <LandingPage />
       </Suspense>
     );
   }
