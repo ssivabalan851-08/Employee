@@ -98,6 +98,12 @@
 .leavewise-landing__nav a:hover { color: var(--lw-landing-violet); }
 
 .leavewise-landing__nav-actions { justify-self: end; display: flex; align-items: center; gap: 12px; }
+.leavewise-landing__sign-in-link {
+  color: var(--lw-landing-copy) !important;
+  font-size: 12px;
+  font-weight: 800;
+}
+.leavewise-landing__sign-in-link:hover { color: var(--lw-landing-violet) !important; }
 .leavewise-landing__portal-link {
   min-height: 44px;
   padding: 0 18px;
@@ -164,6 +170,23 @@
 
 .leavewise-landing__hero-actions,
 .leavewise-landing__cta > div { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.leavewise-landing__signup-links {
+  margin-top: 17px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  color: var(--lw-landing-copy);
+  font-size: 11px;
+  font-weight: 700;
+}
+.leavewise-landing__signup-links a {
+  color: var(--lw-landing-violet);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--lw-landing-violet) 38%, transparent);
+  text-underline-offset: 4px;
+}
+.leavewise-landing__signup-links a:hover { text-decoration-color: currentColor; }
 .leavewise-landing__button {
   min-height: 54px;
   padding: 0 23px;
@@ -323,6 +346,7 @@
   .leavewise-landing__hero-copy { max-width: 780px; text-align: center; margin: 0 auto; }
   .leavewise-landing__hero-copy > p { margin-left: auto; margin-right: auto; }
   .leavewise-landing__hero-actions { justify-content: center; }
+  .leavewise-landing__signup-links { justify-content: center; }
   .leavewise-landing__product { width: min(760px, 94%); margin: 20px auto 0; }
   .leavewise-landing__feature-grid { grid-template-columns: repeat(2, 1fr); }
   .leavewise-landing__feature-grid article:nth-child(3n) { border-right: 1px solid var(--lw-landing-border); }
@@ -371,6 +395,11 @@
   .leavewise-landing__cta > div { display: grid; }
   .leavewise-landing__footer { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .leavewise-landing__footer > p { justify-self: center; }
+}
+
+@media (max-width: 430px) {
+  .leavewise-landing__sign-in-link { display: none; }
+  .leavewise-landing__nav-actions { gap: 8px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -90,10 +90,11 @@ const hrBenefits = [
 const PortalLink: React.FC<{
   role: "employee" | "manager";
   children: React.ReactNode;
+  mode?: "signin" | "signup";
   variant?: "primary" | "secondary" | "light" | "outline";
-}> = ({ role, children, variant = "primary" }) => (
+}> = ({ role, children, mode = "signin", variant = "primary" }) => (
   <a
-    href={`/login?role=${role}`}
+    href={`/login?role=${role}&mode=${mode}`}
     className={`leavewise-landing__button leavewise-landing__button--${variant}`}
   >
     <span>{children}</span>
@@ -124,8 +125,11 @@ export const LandingPage: React.FC = () => (
 
         <div className="leavewise-landing__nav-actions">
           <ThemeToggle />
-          <a className="leavewise-landing__portal-link" href="/login">
-            Open portal <ArrowRight aria-hidden="true" />
+          <a className="leavewise-landing__sign-in-link" href="/login">
+            Sign in
+          </a>
+          <a className="leavewise-landing__portal-link" href="/login?role=employee&mode=signup">
+            Create account <ArrowRight aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -145,6 +149,11 @@ export const LandingPage: React.FC = () => (
           <div className="leavewise-landing__hero-actions">
             <PortalLink role="employee">Open Employee Portal</PortalLink>
             <PortalLink role="manager" variant="secondary">Open HR Portal</PortalLink>
+          </div>
+          <div className="leavewise-landing__signup-links" aria-label="Create a LeaveWise account">
+            <span>New to LeaveWise?</span>
+            <a href="/login?role=employee&mode=signup">Create an employee account</a>
+            <a href="/login?role=manager&mode=signup">Create an HR account</a>
           </div>
           <div className="leavewise-landing__hero-points" aria-label="LeaveWise highlights">
             <span><CheckCircle2 aria-hidden="true" /> Clear for every employee</span>
@@ -289,10 +298,10 @@ export const LandingPage: React.FC = () => (
 
       <section className="leavewise-landing__cta">
         <h2>Ready to make leave management effortless?</h2>
-        <p>Open the right workspace and bring every leave request into one clear process.</p>
+        <p>Create the right account and bring every leave request into one clear process.</p>
         <div>
-          <PortalLink role="employee" variant="light">Open Employee Portal</PortalLink>
-          <PortalLink role="manager" variant="secondary">Open HR Portal</PortalLink>
+          <PortalLink role="employee" mode="signup" variant="light">Create Employee Account</PortalLink>
+          <PortalLink role="manager" mode="signup" variant="secondary">Create HR Account</PortalLink>
         </div>
       </section>
     </main>
