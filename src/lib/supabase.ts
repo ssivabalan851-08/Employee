@@ -22,6 +22,23 @@ function configurationError() {
   return new Error("Supabase is not connected yet. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to the site environment.");
 }
 
+function connectionError() {
+  return new Error(
+    "LeaveWise cannot reach the account database. The configured Supabase project is unavailable; ask the administrator to restore or reconnect it, then try again.",
+  );
+}
+
+async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit) {
+  try {
+    return await fetch(input, init);
+  } catch (error) {
+    if (error instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(String(error))) {
+      throw connectionError();
+    }
+    throw error;
+  }
+}
+
 async function parseResponse(response: Response) {
   const body = await response.text();
   let data: any = null;
@@ -51,13 +68,13 @@ function authHeaders(token = accessToken) {
 export const supabaseAuth = {
   isConfigured: Boolean(supabaseUrl && supabaseKey),
   async signInWithPassword(email: string, password: string) {
-    const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, { method: "POST", headers: authHeaders(null), body: JSON.stringify({ email, password }) });
+    const response = await supabaseFetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, { method: "POST", headers: authHeaders(null), body: JSON.stringify({ email, password }) });
     const data = await parseResponse(response);
     accessToken = data.access_token;
     return data.user as SupabaseAuthUser;
   },
   async signUp(email: string, password: string, metadata: Record<string, unknown>) {
-    const response = await fetch(`${supabaseUrl}/auth/v1/signup`, { method: "POST", headers: authHeaders(null), body: JSON.stringify({ email, password, data: metadata }) });
+    const response = await supabaseFetch(`${supabaseUrl}/auth/v1/signup`, { method: "POST", headers: authHeaders(null), body: JSON.stringify({ email, password, data: metadata }) });
     const data = await parseResponse(response);
     if (!data?.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
       throw new Error("An account already exists for this email.");
@@ -67,7 +84,7 @@ export const supabaseAuth = {
   },
   async requestAccountApproval(userId: string) {
     if (!accessToken) throw new Error("A secure signup session was not created. Confirm email must remain disabled for administrator-approved accounts.");
-    const response = await fetch(`${supabaseUrl}/functions/v1/account-approval`, {
+    const response = await supabaseFetch(`${supabaseUrl}/functions/v1/account-approval`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ action: "request", user_id: userId }),
@@ -75,7 +92,7 @@ export const supabaseAuth = {
     await parseResponse(response);
   },
   async decideAccountApproval(token: string, decision: "approve" | "reject") {
-    const response = await fetch(`${supabaseUrl}/functions/v1/account-approval`, {
+    const response = await supabaseFetch(`${supabaseUrl}/functions/v1/account-approval`, {
       method: "POST",
       headers: authHeaders(null),
       body: JSON.stringify({ action: "decide", token, decision }),
@@ -97,12 +114,12 @@ export const supabaseAuth = {
   },
   async getUser() {
     if (!accessToken) return null;
-    const response = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: authHeaders() });
+    const response = await supabaseFetch(`${supabaseUrl}/auth/v1/user`, { headers: authHeaders() });
     return (await parseResponse(response)) as SupabaseAuthUser;
   },
   async signOut() {
     if (!accessToken) return;
-    try { await fetch(`${supabaseUrl}/auth/v1/logout`, { method: "POST", headers: authHeaders() }); }
+    try { await supabaseFetch(`${supabaseUrl}/auth/v1/logout`, { method: "POST", headers: authHeaders() }); }
     finally { accessToken = null; }
   },
 };
@@ -111,7 +128,7 @@ export async function supabaseRequest<T>(path: string, options: RequestInit & { 
   if (!accessToken) throw new Error("Your session has ended. Please sign in again.");
   const headers = { ...authHeaders(), ...(options.headers || {}) } as Record<string, string>;
   if (options.prefer) headers.Prefer = options.prefer;
-  const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, { ...options, headers });
+  const response = await supabaseFetch(`${supabaseUrl}/rest/v1/${path}`, { ...options, headers });
   return parseResponse(response) as Promise<T>;
 }
 
