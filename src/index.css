@@ -20,20 +20,20 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --lw-primary: #4338ca;
-  --lw-primary-strong: #4f46e5;
-  --lw-secondary: #6d28d9;
-  --lw-brand-gradient: linear-gradient(112deg, #4338ca 0%, #6d28d9 100%);
-  --lw-accent: #a78bfa;
-  --lw-accent-strong: #a78bfa;
-  --lw-accent-soft: #2e2458;
-  --lw-canvas: #0d1324;
-  --lw-surface: #18223e;
-  --lw-surface-soft: #243150;
-  --lw-border: #435572;
-  --lw-text: #f2f6ff;
-  --lw-muted: #b2c0d6;
-  --lw-shadow: 0 20px 54px rgba(0, 4, 15, 0.32);
+  --lw-primary: #1d4ed8;
+  --lw-primary-strong: #0b2545;
+  --lw-secondary: #2563eb;
+  --lw-brand-gradient: linear-gradient(112deg, #0b2545 0%, #1d4ed8 100%);
+  --lw-accent: #60a5fa;
+  --lw-accent-strong: #93c5fd;
+  --lw-accent-soft: #172b49;
+  --lw-canvas: #08111f;
+  --lw-surface: #111d2e;
+  --lw-surface-soft: #17263b;
+  --lw-border: #2c405b;
+  --lw-text: #edf4fc;
+  --lw-muted: #9fb0c5;
+  --lw-shadow: 0 18px 48px rgba(1, 7, 18, 0.34);
 }
 
 * {
@@ -519,6 +519,584 @@ textarea:focus-visible,
   overflow-y: auto;
 }
 
+/* Shared holiday and company leave calendar */
+.leavewise-holiday-bar {
+  overflow: hidden;
+  border: 1px solid var(--lw-border);
+  border-radius: 18px;
+  color: var(--lw-text);
+  background:
+    radial-gradient(circle at 92% -20%, rgba(37, 153, 176, 0.13), transparent 18rem),
+    var(--lw-surface);
+  box-shadow: 0 14px 38px rgba(14, 31, 59, 0.09);
+}
+
+.leavewise-holiday-bar__header {
+  min-height: 92px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--lw-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.leavewise-holiday-bar__heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.leavewise-holiday-bar__icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f8d98, #2877b5);
+  box-shadow: 0 10px 24px rgba(15, 141, 152, 0.22);
+}
+
+.leavewise-holiday-bar__icon svg { width: 21px; height: 21px; }
+.leavewise-holiday-bar__heading h2 {
+  margin: 0;
+  color: var(--lw-text);
+  font-size: 0.95rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 800;
+}
+.leavewise-holiday-bar__heading p {
+  margin: 4px 0 0;
+  color: var(--lw-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.leavewise-holiday-bar__controls {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.leavewise-holiday-bar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px 14px;
+}
+.leavewise-holiday-bar__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--lw-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+.leavewise-holiday-bar__legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.leavewise-holiday-bar__legend i.is-government { background: #2877b5; }
+.leavewise-holiday-bar__legend i.is-company { background: #0f9f99; }
+
+.leavewise-holiday-bar__navigation {
+  display: grid;
+  grid-template-columns: 40px minmax(94px, auto) 40px;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--lw-border);
+  border-radius: 12px;
+  background: var(--lw-surface-soft);
+}
+.leavewise-holiday-bar__navigation strong {
+  color: var(--lw-text);
+  font-size: 0.72rem;
+  text-align: center;
+  white-space: nowrap;
+}
+.leavewise-holiday-bar__navigation button {
+  width: 40px;
+  min-height: 40px !important;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: var(--lw-text);
+  background: var(--lw-surface);
+  transition: color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+.leavewise-holiday-bar__navigation button:hover:not(:disabled) {
+  color: #0f8d98;
+  transform: translateY(-1px);
+}
+.leavewise-holiday-bar__navigation button:disabled { opacity: 0.35; cursor: not-allowed; }
+.leavewise-holiday-bar__navigation svg { width: 17px; height: 17px; }
+
+.leavewise-holiday-bar__track {
+  position: relative;
+  padding: 18px 20px 20px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.leavewise-holiday-bar__track::before {
+  content: "";
+  position: absolute;
+  left: 54px;
+  right: 54px;
+  top: 51px;
+  height: 1px;
+  background: linear-gradient(90deg, #2877b5, #20aaa2);
+  opacity: 0.22;
+}
+
+.leavewise-holiday-bar__event {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  min-height: 112px;
+  padding: 13px;
+  border: 1px solid var(--lw-border);
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  background: color-mix(in srgb, var(--lw-surface) 88%, #edf7fb);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.leavewise-holiday-bar__event:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, #2877b5 38%, var(--lw-border));
+  box-shadow: 0 12px 26px rgba(14, 74, 105, 0.1);
+}
+.leavewise-holiday-bar__event.is-company {
+  background: color-mix(in srgb, var(--lw-surface) 84%, #dff7f3);
+}
+
+.leavewise-holiday-bar__event time {
+  width: 54px;
+  min-height: 78px;
+  padding: 8px 4px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  color: #ffffff;
+  background: linear-gradient(155deg, #235f91, #2877b5);
+  box-shadow: 0 8px 19px rgba(40, 119, 181, 0.18);
+}
+.leavewise-holiday-bar__event.is-company time {
+  background: linear-gradient(155deg, #087f8c, #13a39c);
+  box-shadow: 0 8px 19px rgba(8, 127, 140, 0.18);
+}
+.leavewise-holiday-bar__event time span,
+.leavewise-holiday-bar__event time small {
+  font-size: 0.57rem;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.leavewise-holiday-bar__event time strong {
+  margin: 4px 0;
+  font-size: 1.55rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.leavewise-holiday-bar__event-copy { min-width: 0; }
+.leavewise-holiday-bar__event-copy > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #2877b5;
+  font-size: 0.58rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.leavewise-holiday-bar__event.is-company .leavewise-holiday-bar__event-copy > span { color: #087f8c; }
+.leavewise-holiday-bar__event-copy > span svg { width: 12px; height: 12px; }
+.leavewise-holiday-bar__event-copy h3 {
+  overflow: hidden;
+  margin: 7px 0 0;
+  color: var(--lw-text);
+  font-size: 0.78rem;
+  line-height: 1.3;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.leavewise-holiday-bar__event-copy p {
+  overflow: hidden;
+  margin: 4px 0 0;
+  color: var(--lw-muted);
+  font-size: 0.67rem;
+  line-height: 1.35;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme="dark"] .leavewise-holiday-bar {
+  background:
+    radial-gradient(circle at 92% -20%, rgba(34, 211, 238, 0.09), transparent 18rem),
+    var(--lw-surface);
+  box-shadow: 0 16px 42px rgba(1, 7, 18, 0.25);
+}
+:root[data-theme="dark"] .leavewise-holiday-bar__navigation,
+:root[data-theme="dark"] .leavewise-holiday-bar__navigation button { background: var(--lw-surface-soft); }
+:root[data-theme="dark"] .leavewise-holiday-bar__event {
+  background: color-mix(in srgb, var(--lw-surface) 88%, #12364a);
+}
+:root[data-theme="dark"] .leavewise-holiday-bar__event.is-company {
+  background: color-mix(in srgb, var(--lw-surface) 86%, #0d3d42);
+}
+:root[data-theme="dark"] .leavewise-holiday-bar__event-copy > span { color: #79c5f3; }
+:root[data-theme="dark"] .leavewise-holiday-bar__event.is-company .leavewise-holiday-bar__event-copy > span { color: #56d9cf; }
+
+@media (max-width: 1040px) {
+  .leavewise-holiday-bar__header { align-items: flex-start; flex-direction: column; }
+  .leavewise-holiday-bar__controls { width: 100%; justify-content: space-between; }
+  .leavewise-holiday-bar__track { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .leavewise-holiday-bar__track::before { display: none; }
+}
+
+@media (max-width: 640px) {
+  .leavewise-holiday-bar__header { padding: 17px; }
+  .leavewise-holiday-bar__heading { align-items: flex-start; }
+  .leavewise-holiday-bar__heading p { max-width: 30ch; }
+  .leavewise-holiday-bar__controls { align-items: stretch; flex-direction: column; gap: 12px; }
+  .leavewise-holiday-bar__legend { justify-content: flex-start; }
+  .leavewise-holiday-bar__navigation { width: 100%; grid-template-columns: 40px 1fr 40px; }
+  .leavewise-holiday-bar__track { padding: 14px 16px 17px; grid-template-columns: 1fr; }
+  .leavewise-holiday-bar__event { min-height: 104px; }
+}
+
+/* Full monthly holiday calendar shared by Employee and HR */
+.leavewise-month-calendar {
+  overflow: hidden;
+  border: 1px solid var(--lw-border);
+  border-radius: 18px;
+  color: var(--lw-text);
+  background:
+    radial-gradient(circle at 94% -15%, rgba(37, 119, 181, 0.12), transparent 20rem),
+    var(--lw-surface);
+  box-shadow: 0 14px 38px rgba(14, 31, 59, 0.09);
+}
+
+.leavewise-month-calendar__header {
+  min-height: 94px;
+  padding: 19px 22px;
+  border-bottom: 1px solid var(--lw-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.leavewise-month-calendar__heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.leavewise-month-calendar__icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #0e7490);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+}
+
+.leavewise-month-calendar__icon svg { width: 21px; height: 21px; }
+.leavewise-month-calendar__heading h2 {
+  margin: 0;
+  color: var(--lw-text);
+  font-size: 0.96rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 800;
+}
+.leavewise-month-calendar__heading p {
+  margin: 4px 0 0;
+  color: var(--lw-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+.leavewise-month-calendar__navigation {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 38px minmax(138px, auto) 38px auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.leavewise-month-calendar__navigation strong {
+  color: var(--lw-text);
+  font-size: 0.78rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.leavewise-month-calendar__navigation button {
+  min-height: 38px !important;
+  padding: 0;
+  border: 1px solid var(--lw-border);
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: var(--lw-text);
+  background: var(--lw-surface-soft);
+  transition: color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.leavewise-month-calendar__navigation button:not(.leavewise-month-calendar__today) {
+  width: 38px;
+}
+
+.leavewise-month-calendar__navigation button:hover {
+  color: #2563eb;
+  border-color: color-mix(in srgb, #2563eb 42%, var(--lw-border));
+  transform: translateY(-1px);
+}
+
+.leavewise-month-calendar__navigation svg { width: 17px; height: 17px; }
+.leavewise-month-calendar__navigation .leavewise-month-calendar__today {
+  min-width: 62px;
+  padding: 0 13px;
+  color: #fff;
+  border-color: #2563eb;
+  background: #2563eb;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.leavewise-month-calendar__meta {
+  min-height: 54px;
+  padding: 10px 22px;
+  border-bottom: 1px solid var(--lw-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  background: color-mix(in srgb, var(--lw-surface-soft) 72%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 16px;
+}
+
+.leavewise-month-calendar__legend span,
+.leavewise-month-calendar__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--lw-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.leavewise-month-calendar__legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.leavewise-month-calendar__legend i.is-government { background: #2563eb; }
+.leavewise-month-calendar__legend i.is-company { background: #0e7490; }
+.leavewise-month-calendar__legend i.is-today {
+  border: 2px solid #7c3aed;
+  background: transparent;
+}
+.leavewise-month-calendar__summary svg { width: 14px; height: 14px; color: #2563eb; }
+
+.leavewise-month-calendar__scroll {
+  overflow-x: auto;
+  scrollbar-color: color-mix(in srgb, var(--lw-muted) 35%, transparent) transparent;
+}
+
+.leavewise-month-calendar__grid {
+  min-width: 760px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  background: var(--lw-border);
+  gap: 1px;
+}
+
+.leavewise-month-calendar__weekday {
+  min-height: 41px;
+  padding: 10px 8px;
+  display: grid;
+  place-items: center;
+  color: var(--lw-muted);
+  background: var(--lw-surface);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.leavewise-month-calendar__weekday span { display: none; }
+
+.leavewise-month-calendar__day {
+  position: relative;
+  min-width: 0;
+  min-height: 118px;
+  padding: 10px;
+  color: var(--lw-text);
+  background: var(--lw-surface);
+  transition: background-color 160ms ease;
+}
+
+.leavewise-month-calendar__day:hover {
+  background: color-mix(in srgb, var(--lw-surface-soft) 70%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__day.is-weekend {
+  background: color-mix(in srgb, var(--lw-surface-soft) 40%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__day.is-outside {
+  color: color-mix(in srgb, var(--lw-muted) 58%, transparent);
+  background: color-mix(in srgb, var(--lw-surface-soft) 52%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__day.is-today {
+  z-index: 1;
+  outline: 2px solid #7c3aed;
+  outline-offset: -2px;
+  background: color-mix(in srgb, #ede9fe 42%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__day-number {
+  min-height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.leavewise-month-calendar__day-number time {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 850;
+}
+
+.leavewise-month-calendar__day.is-today .leavewise-month-calendar__day-number time {
+  color: #fff;
+  background: #7c3aed;
+}
+
+.leavewise-month-calendar__day-number span {
+  color: #7c3aed;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.leavewise-month-calendar__events {
+  margin-top: 7px;
+  display: grid;
+  gap: 5px;
+}
+
+.leavewise-month-calendar__event {
+  min-width: 0;
+  min-height: 29px;
+  padding: 6px 7px;
+  border: 1px solid color-mix(in srgb, #2563eb 24%, var(--lw-border));
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #1d4ed8;
+  background: color-mix(in srgb, #dbeafe 70%, var(--lw-surface));
+  font-size: 0.61rem;
+  line-height: 1.25;
+  font-weight: 800;
+}
+
+.leavewise-month-calendar__event.is-company {
+  color: #0e7490;
+  border-color: color-mix(in srgb, #0e7490 26%, var(--lw-border));
+  background: color-mix(in srgb, #cffafe 62%, var(--lw-surface));
+}
+
+.leavewise-month-calendar__event svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.leavewise-month-calendar__event span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme="dark"] .leavewise-month-calendar {
+  background:
+    radial-gradient(circle at 94% -15%, rgba(96, 165, 250, 0.1), transparent 20rem),
+    var(--lw-surface);
+  box-shadow: 0 16px 42px rgba(1, 7, 18, 0.25);
+}
+:root[data-theme="dark"] .leavewise-month-calendar__day.is-today {
+  background: color-mix(in srgb, #312e81 34%, var(--lw-surface));
+}
+:root[data-theme="dark"] .leavewise-month-calendar__event {
+  color: #bfdbfe;
+  background: color-mix(in srgb, #1d4ed8 22%, var(--lw-surface));
+}
+:root[data-theme="dark"] .leavewise-month-calendar__event.is-company {
+  color: #a5f3fc;
+  background: color-mix(in srgb, #0e7490 24%, var(--lw-surface));
+}
+
+@media (max-width: 960px) {
+  .leavewise-month-calendar__header { align-items: flex-start; flex-direction: column; }
+  .leavewise-month-calendar__navigation { width: 100%; grid-template-columns: 38px 1fr 38px auto; }
+}
+
+@media (max-width: 640px) {
+  .leavewise-month-calendar__header { padding: 17px; }
+  .leavewise-month-calendar__heading { align-items: flex-start; }
+  .leavewise-month-calendar__heading p { max-width: 35ch; }
+  .leavewise-month-calendar__navigation { grid-template-columns: 36px 1fr 36px auto; }
+  .leavewise-month-calendar__navigation button:not(.leavewise-month-calendar__today) { width: 36px; }
+  .leavewise-month-calendar__navigation .leavewise-month-calendar__today { min-width: 58px; padding-inline: 10px; }
+  .leavewise-month-calendar__meta { align-items: flex-start; flex-direction: column; padding: 12px 17px; }
+  .leavewise-month-calendar__summary { align-self: flex-start; }
+  .leavewise-month-calendar__grid { min-width: 700px; }
+  .leavewise-month-calendar__weekday strong { display: none; }
+  .leavewise-month-calendar__weekday span { display: inline; }
+  .leavewise-month-calendar__day { min-height: 105px; padding: 8px; }
+}
+
 /* Notification popover */
 .leavewise-topbar [class*="w-80"] {
   width: min(24rem, calc(100vw - 2rem));
@@ -762,12 +1340,12 @@ textarea:focus-visible,
 :root[data-theme="dark"] .leavewise-login,
 :root[data-theme="dark"] .leavewise-loading {
   background:
-    radial-gradient(circle at 10% 12%, rgba(167, 139, 250, 0.11), transparent 31%),
-    radial-gradient(circle at 90% 86%, rgba(63, 91, 139, 0.18), transparent 34%),
-    linear-gradient(135deg, #0d1324 0%, #101d33 53%, #0d1324 100%);
+    radial-gradient(circle at 10% 12%, rgba(59, 130, 246, 0.12), transparent 31%),
+    radial-gradient(circle at 90% 86%, rgba(14, 116, 144, 0.1), transparent 34%),
+    linear-gradient(135deg, #08111f 0%, #0d1a2d 53%, #08111f 100%);
 }
-:root[data-theme="dark"] .leavewise-login-orb--one { background: rgba(167, 139, 250, 0.09); }
-:root[data-theme="dark"] .leavewise-login-orb--two { background: rgba(63, 91, 139, 0.16); }
+:root[data-theme="dark"] .leavewise-login-orb--one { background: rgba(59, 130, 246, 0.09); }
+:root[data-theme="dark"] .leavewise-login-orb--two { background: rgba(14, 116, 144, 0.1); }
 :root[data-theme="dark"] .leavewise-login-grid,
 :root[data-theme="dark"] .leavewise-auth-wrap,
 :root[data-theme="dark"] .leavewise-auth-card,
@@ -780,24 +1358,40 @@ textarea:focus-visible,
 :root[data-theme="dark"] .leavewise-auth-card .bg-slate-50,
 :root[data-theme="dark"] .leavewise-auth-card .bg-slate-100,
 :root[data-theme="dark"] .leavewise-auth-card .bg-indigo-50 { background: var(--lw-surface-soft) !important; }
+:root[data-theme="dark"] .leavewise-auth-card .bg-white\/60 {
+  background: rgba(17, 29, 46, 0.76) !important;
+  border-color: var(--lw-border) !important;
+}
+:root[data-theme="dark"] .leavewise-auth-card > div:first-child button:hover {
+  background: #1a2d47 !important;
+  border-color: #466181 !important;
+}
 :root[data-theme="dark"] .leavewise-auth-card :is(.text-slate-900, .text-slate-800, .text-slate-700, .text-slate-600) { color: var(--lw-text) !important; }
 :root[data-theme="dark"] .leavewise-auth-card :is(.text-slate-500, .text-slate-400) { color: var(--lw-muted) !important; }
 :root[data-theme="dark"] .leavewise-auth-card .text-indigo-600 { color: var(--lw-accent) !important; }
 :root[data-theme="dark"] .leavewise-auth-card input,
 :root[data-theme="dark"] .leavewise-auth-card select {
-  background: #101d33 !important;
+  background: #0c1829 !important;
   border-color: var(--lw-border) !important;
   color: var(--lw-text) !important;
 }
-:root[data-theme="dark"] :is(input, textarea)::placeholder { color: #9caec8; opacity: 1; }
+:root[data-theme="dark"] :is(input, textarea)::placeholder { color: #8295ae; opacity: 1; }
 :root[data-theme="dark"] .leavewise-app-shell {
   background:
-    linear-gradient(rgba(167, 139, 250, 0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(167, 139, 250, 0.018) 1px, transparent 1px),
-    var(--lw-canvas) !important;
-  background-size: 36px 36px;
+    radial-gradient(circle at 88% 8%, rgba(37, 99, 235, 0.08), transparent 26rem),
+    linear-gradient(180deg, #08111f 0%, #0a1423 100%) !important;
 }
-:root[data-theme="dark"] .leavewise-footer { background: #101d33 !important; }
+:root[data-theme="dark"] .leavewise-topbar {
+  background: linear-gradient(105deg, #0a1d35 0%, #123a68 58%, #1d4ed8 100%) !important;
+  border-color: rgba(96, 165, 250, 0.24) !important;
+  box-shadow: 0 10px 32px rgba(1, 7, 18, 0.3) !important;
+}
+:root[data-theme="dark"] .leavewise-topbar .bg-emerald-50\/60 {
+  background: rgba(15, 38, 68, 0.82) !important;
+  border-color: rgba(96, 165, 250, 0.32) !important;
+  color: #dbeafe !important;
+}
+:root[data-theme="dark"] .leavewise-footer { background: #0c1829 !important; }
 :root[data-theme="dark"] .leavewise-dashboard .bg-white,
 :root[data-theme="dark"] .leavewise-dashboard .rounded-xl.bg-white,
 :root[data-theme="dark"] .leavewise-dashboard .rounded-2xl.bg-white {
@@ -807,8 +1401,9 @@ textarea:focus-visible,
 }
 :root[data-theme="dark"] .leavewise-dashboard > .bg-white:first-of-type,
 :root[data-theme="dark"] .leavewise-page-heading {
-  background: linear-gradient(120deg, #312e81, #4338ca) !important;
-  border-color: rgba(167, 139, 250, 0.28) !important;
+  background: linear-gradient(118deg, #0d2a4c 0%, #1d4ed8 100%) !important;
+  border-color: rgba(96, 165, 250, 0.25) !important;
+  box-shadow: 0 18px 48px rgba(1, 7, 18, 0.28) !important;
 }
 :root[data-theme="dark"] .leavewise-dashboard :is(.text-slate-950, .text-slate-900, .text-slate-800, .text-slate-700, .text-slate-600, .text-gray-900, .text-gray-800, .text-gray-700) { color: var(--lw-text) !important; }
 :root[data-theme="dark"] .leavewise-dashboard :is(.text-slate-500, .text-slate-400, .text-gray-600, .text-gray-500) { color: var(--lw-muted) !important; }
@@ -818,15 +1413,15 @@ textarea:focus-visible,
 :root[data-theme="dark"] .leavewise-dashboard .bg-slate-100,
 :root[data-theme="dark"] .leavewise-dashboard .bg-gray-100 { background: var(--lw-surface-soft) !important; }
 :root[data-theme="dark"] .leavewise-dashboard :is(input, select, textarea) {
-  background: #101d33 !important;
+  background: #0c1829 !important;
   border-color: var(--lw-border) !important;
   color: var(--lw-text) !important;
 }
 :root[data-theme="dark"] .leavewise-dashboard table thead {
-  background: #243150 !important;
+  background: #17263b !important;
   color: var(--lw-text) !important;
 }
-:root[data-theme="dark"] .leavewise-dashboard table tbody tr:hover { background: rgba(167, 139, 250, 0.07) !important; }
+:root[data-theme="dark"] .leavewise-dashboard table tbody tr:hover { background: rgba(96, 165, 250, 0.07) !important; }
 :root[data-theme="dark"] .leavewise-topbar [class*="w-80"] {
   background: var(--lw-surface) !important;
   border-color: var(--lw-border) !important;
@@ -838,19 +1433,29 @@ textarea:focus-visible,
 :root[data-theme="dark"] .leavewise-approval :is(.text-slate-500, .text-slate-400) { color: var(--lw-muted) !important; }
 :root[data-theme="dark"] .leavewise-approval :is(.bg-white, .bg-slate-50) { background: var(--lw-surface-soft) !important; }
 :root[data-theme="dark"] .leavewise-approval > section.bg-white { background: var(--lw-surface) !important; }
-:root[data-theme="dark"] .leavewise-approval .leavewise-approval-header { background: linear-gradient(120deg, #312e81, #1e1b4b) !important; }
-:root[data-theme="dark"] .leavewise-approval-login-link { background: #4338ca !important; }
-:root[data-theme="dark"] .leavewise-approval-login-link:hover { background: #6d28d9 !important; }
+:root[data-theme="dark"] .leavewise-approval .leavewise-approval-header { background: linear-gradient(118deg, #0b2545, #1d4ed8) !important; }
+:root[data-theme="dark"] .leavewise-approval-login-link { background: #1d4ed8 !important; }
+:root[data-theme="dark"] .leavewise-approval-login-link:hover { background: #2563eb !important; }
 
 /* Status colors retain their meaning and contrast on dark surfaces. */
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) [class*="bg-emerald-50"] { background-color: #173b35 !important; }
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) [class*="bg-amber-50"] { background-color: #42331f !important; }
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) [class*="bg-rose-50"] { background-color: #432735 !important; }
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) [class*="bg-sky-50"] { background-color: #1b3547 !important; }
-:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card[class*="bg-rose-50"] { background-color: #432735 !important; }
-:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card[class*="bg-amber-50"] { background-color: #42331f !important; }
-:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card[class*="bg-emerald-50"] { background-color: #173b35 !important; }
-:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card[class*="bg-sky-50"] { background-color: #1b3547 !important; }
+:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card {
+  background: linear-gradient(145deg, #132238 0%, #101b2c 100%) !important;
+  border-color: #304763 !important;
+  box-shadow: 0 12px 32px rgba(1, 7, 18, 0.22) !important;
+}
+:root[data-theme="dark"] .leavewise-dashboard .leavewise-draggable-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #60a5fa, #2563eb);
+  opacity: 0.9;
+}
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) :is(.text-emerald-700, .text-emerald-800, .text-emerald-900) { color: #a5ead0 !important; }
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-amber-950) { color: #ffcf8b !important; }
 :root[data-theme="dark"] :is(.leavewise-dashboard, .leavewise-auth-card, .leavewise-approval) :is(.text-rose-600, .text-rose-700, .text-rose-800, .text-rose-900) { color: #ffb5c1 !important; }
@@ -971,6 +1576,398 @@ textarea:focus-visible,
 @keyframes leavewise-theme-reveal {
   from { clip-path: circle(0 at var(--lw-theme-x, 50%) var(--lw-theme-y, 50%)); }
   to { clip-path: circle(150vmax at var(--lw-theme-x, 50%) var(--lw-theme-y, 50%)); }
+}
+
+/* Leave analytics charts */
+.leavewise-analytics {
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px solid var(--lw-border);
+  border-radius: 16px;
+  color: var(--lw-text);
+  background: var(--lw-surface);
+  box-shadow: 0 14px 38px rgba(14, 31, 59, 0.09);
+}
+
+.leavewise-analytics__header,
+.leavewise-analytics__heading,
+.leavewise-analytics__note,
+.leavewise-chart-legend {
+  display: flex;
+  align-items: center;
+}
+
+.leavewise-analytics__header {
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.leavewise-analytics__heading {
+  min-width: 0;
+  gap: 13px;
+}
+
+.leavewise-analytics__icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid color-mix(in srgb, var(--lw-accent) 32%, var(--lw-border));
+  border-radius: 11px;
+  color: var(--lw-accent-strong);
+  background: var(--lw-accent-soft);
+}
+
+.leavewise-analytics__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.leavewise-analytics h3,
+.leavewise-hr-chart-panel__title strong {
+  margin: 0;
+  color: var(--lw-text);
+  font-size: 0.93rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.leavewise-analytics__heading p,
+.leavewise-hr-chart-panel__title span,
+.leavewise-analytics__summary span,
+.leavewise-employee-chart__column small,
+.leavewise-analytics__empty span {
+  color: var(--lw-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.leavewise-analytics__heading p {
+  margin: 3px 0 0;
+}
+
+.leavewise-analytics__summary {
+  flex: 0 0 auto;
+  min-width: 116px;
+  padding-left: 22px;
+  border-left: 1px solid var(--lw-border);
+  text-align: right;
+}
+
+.leavewise-analytics__summary strong,
+.leavewise-analytics__summary span {
+  display: block;
+}
+
+.leavewise-analytics__summary strong {
+  color: var(--lw-text);
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.leavewise-analytics__summary span {
+  margin-top: 6px;
+}
+
+.leavewise-employee-chart {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  min-height: 238px;
+}
+
+.leavewise-employee-chart__scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 186px;
+  padding: 0 8px 0 0;
+  color: var(--lw-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.leavewise-employee-chart__plot {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(54px, 1fr));
+  gap: clamp(14px, 5vw, 54px);
+  padding: 0 clamp(10px, 3vw, 30px);
+}
+
+.leavewise-employee-chart__grid {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--lw-border) 70%, transparent);
+}
+
+.leavewise-employee-chart__grid--top { top: 0; }
+.leavewise-employee-chart__grid--middle { top: 93px; }
+.leavewise-employee-chart__grid--bottom { top: 186px; }
+
+.leavewise-employee-chart__column {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 186px auto auto;
+  min-width: 0;
+  text-align: center;
+}
+
+.leavewise-employee-chart__bar-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.leavewise-employee-chart__bar {
+  position: relative;
+  width: min(48px, 72%);
+  min-height: 2px;
+  border-radius: 7px 7px 2px 2px;
+  box-shadow: 0 10px 24px rgba(29, 78, 216, 0.18);
+  transition: height 520ms cubic-bezier(.2, .8, .2, 1), filter 180ms ease;
+}
+
+.leavewise-employee-chart__bar:hover {
+  filter: brightness(1.12);
+}
+
+.leavewise-employee-chart__bar span {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  color: var(--lw-text);
+  font-size: 0.76rem;
+  font-weight: 800;
+  transform: translateX(-50%);
+}
+
+.leavewise-employee-chart__column > strong {
+  margin-top: 13px;
+  color: var(--lw-text);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.leavewise-employee-chart__column small {
+  margin-top: 3px;
+  white-space: nowrap;
+}
+
+.leavewise-analytics__note {
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 17px;
+  border-top: 1px solid var(--lw-border);
+  color: var(--lw-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.leavewise-analytics__note svg {
+  width: 16px;
+  height: 16px;
+  color: var(--lw-accent-strong);
+}
+
+.leavewise-hr-charts {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(360px, 1.18fr);
+  gap: 20px;
+}
+
+.leavewise-hr-chart-panel {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--lw-border);
+  border-radius: 13px;
+  background: var(--lw-surface-soft);
+}
+
+.leavewise-hr-chart-panel__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.leavewise-hr-chart-panel__title strong {
+  font-size: 0.79rem;
+}
+
+.leavewise-type-bars,
+.leavewise-department-bars {
+  display: grid;
+  gap: 14px;
+}
+
+.leavewise-type-bars__row,
+.leavewise-department-bars__row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  color: var(--lw-text);
+  font-size: 0.74rem;
+}
+
+.leavewise-type-bars__row {
+  grid-template-columns: 9px 62px minmax(80px, 1fr) 20px;
+}
+
+.leavewise-chart-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.leavewise-type-bars__label,
+.leavewise-department-bars__label {
+  overflow: hidden;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leavewise-type-bars__track,
+.leavewise-department-bars__track {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lw-border) 48%, transparent);
+}
+
+.leavewise-type-bars__fill,
+.leavewise-department-bars__segment {
+  display: block;
+  min-width: 0;
+  transition: width 520ms cubic-bezier(.2, .8, .2, 1);
+}
+
+.leavewise-type-bars__fill {
+  border-radius: 999px;
+}
+
+.leavewise-department-bars {
+  max-height: 220px;
+  padding-right: 5px;
+  overflow-y: auto;
+}
+
+.leavewise-department-bars__row {
+  grid-template-columns: minmax(82px, 116px) minmax(110px, 1fr) 22px;
+}
+
+.leavewise-type-bars__row > strong,
+.leavewise-department-bars__row > strong {
+  color: var(--lw-text);
+  font-size: 0.75rem;
+  text-align: right;
+}
+
+.leavewise-chart-legend {
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 19px;
+  padding-top: 17px;
+  border-top: 1px solid var(--lw-border);
+}
+
+.leavewise-chart-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--lw-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.leavewise-chart-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+
+.leavewise-chart-color--annual { background: #2563eb; }
+.leavewise-chart-color--sick { background: #0e7490; }
+.leavewise-chart-color--casual { background: #64748b; }
+.leavewise-chart-color--parental { background: #4f46e5; }
+
+.leavewise-analytics__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 210px;
+  padding: 28px;
+  border: 1px dashed var(--lw-border);
+  border-radius: 13px;
+  text-align: center;
+  background: var(--lw-surface-soft);
+}
+
+.leavewise-analytics__empty svg {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 12px;
+  color: var(--lw-accent-strong);
+}
+
+.leavewise-analytics__empty strong {
+  margin-bottom: 4px;
+  color: var(--lw-text);
+  font-size: 0.82rem;
+}
+
+:root[data-theme="dark"] .leavewise-analytics {
+  box-shadow: 0 16px 40px rgba(1, 7, 18, 0.24);
+}
+
+:root[data-theme="dark"] .leavewise-chart-color--annual { background: #60a5fa; }
+:root[data-theme="dark"] .leavewise-chart-color--sick { background: #22d3ee; }
+:root[data-theme="dark"] .leavewise-chart-color--casual { background: #94a3b8; }
+:root[data-theme="dark"] .leavewise-chart-color--parental { background: #818cf8; }
+
+@media (max-width: 820px) {
+  .leavewise-hr-charts { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .leavewise-analytics__header {
+    align-items: flex-start;
+    margin-bottom: 24px;
+  }
+  .leavewise-analytics__summary {
+    min-width: auto;
+    padding-left: 14px;
+  }
+  .leavewise-analytics__summary strong { font-size: 1.25rem; }
+  .leavewise-analytics__summary span { max-width: 76px; }
+  .leavewise-employee-chart { grid-template-columns: 31px minmax(0, 1fr); }
+  .leavewise-employee-chart__plot {
+    gap: 8px;
+    padding-inline: 5px;
+  }
+  .leavewise-employee-chart__column small {
+    font-size: 0.62rem;
+    white-space: normal;
+  }
+  .leavewise-hr-chart-panel { padding: 16px; }
+  .leavewise-hr-chart-panel__title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .leavewise-department-bars__row {
+    grid-template-columns: minmax(72px, 92px) minmax(80px, 1fr) 20px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

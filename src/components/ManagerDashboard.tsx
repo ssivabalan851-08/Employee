@@ -3,11 +3,162 @@ import { useAuth } from "../lib/auth-context.tsx";
 import { 
   Users, CheckCircle, Clock, XCircle, 
   Search, ShieldCheck, Filter, ChevronRight, Edit2, 
-  Save, AlertTriangle, CalendarRange, TrendingUp, RefreshCw, Ban
+  Save, AlertTriangle, CalendarRange, TrendingUp, RefreshCw, Ban,
+  Gauge, ClipboardCheck, UserCheck, Info
 } from "lucide-react";
 import { LeaveRequest, LeaveStatistics, LeaveType, LeaveStatus, UserProfile } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
 import { DraggableStatCard } from "./DraggableStatCard.tsx";
+import { HrApprovedLeaveChart } from "./LeaveAnalyticsCharts.tsx";
+import { HolidayCalendarBar } from "./HolidayCalendarBar.tsx";
+
+type IntelligentLeaveRequest = LeaveRequest & {
+  policyEvaluation?: {
+    id?: string;
+    outcome: "pass" | "warning" | "fail";
+    version: string | number;
+    checks: unknown[];
+    evaluatedAt?: string;
+  };
+  coverageImpact?: {
+    id?: string;
+    score: number;
+    level: "low" | "moderate" | "high";
+    reasons: string[];
+    dailyFacts: unknown[];
+    recommendedDates: unknown[];
+    handoverRequired: boolean;
+    evaluatedAt?: string;
+  };
+  handover?: {
+    id?: string;
+    required: boolean;
+    status: "not_required" | "draft" | "awaiting_acknowledgment" | "ready" | "declined";
+    backupUserId?: string;
+    backupName?: string;
+    summary?: string;
+    items: unknown[];
+    acknowledgedAt?: string;
+    declinedReason?: string;
+  };
+};
+
+type DecisionService = typeof DbService & {
+  processLeaveRequestV2?: (
+    requestId: string,
+    action: "approve" | "reject",
+    comment: string,
+    overrideReason?: string,
+  ) => Promise<unknown>;
+};
+
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+
+const firstDisplayValue = (record: Record<string, unknown>, keys: string[]) => {
+  for (const key of keys) {
+    const value = record[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  }
+  return "";
+};
+
+const humanizeValue = (value: unknown) => {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") return value.replace(/_/g, " ");
+  return "";
+};
+
+const normalizeIndicator = (value: unknown): "pass" | "warning" | "fail" | "info" => {
+  const label = String(value ?? "").toLowerCase();
+  if (label === "low") return "pass";
+  if (label === "moderate") return "warning";
+  if (label === "high") return "fail";
+  if (["pass", "passed", "ready", "complete", "completed", "ok", "allowed"].some((word) => label.includes(word))) return "pass";
+  if (["fail", "failed", "block", "blocked", "declined", "rejected"].some((word) => label.includes(word))) return "fail";
+  if (["warn", "moderate", "pending", "awaiting", "draft"].some((word) => label.includes(word))) return "warning";
+  return "info";
+};
+
+const indicatorClasses = {
+  pass: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-900",
+  fail: "border-rose-200 bg-rose-50 text-rose-800",
+  info: "border-slate-200 bg-slate-50 text-slate-700",
+};
+
+const hasIntelligenceData = (request: LeaveRequest | null): request is IntelligentLeaveRequest => {
+  if (!request) return false;
+  const intelligentRequest = request as IntelligentLeaveRequest;
+  return Boolean(intelligentRequest.policyEvaluation || intelligentRequest.coverageImpact || intelligentRequest.handover);
+};
+
+const listItemView = (item: unknown, fallbackLabel: string) => {
+  if (typeof item === "string") {
+    return { label: item, detail: "", status: "info" as const };
+  }
+
+  const record = asRecord(item);
+  if (!record) return { label: fallbackLabel, detail: "", status: "info" as const };
+
+  const label = firstDisplayValue(record, ["label", "name", "title", "rule", "code", "date"]) || fallbackLabel;
+  const detail = firstDisplayValue(record, ["message", "detail", "description", "reason", "value"]);
+  const rawStatus = record.status ?? record.outcome ?? record.result ?? record.state ?? record.completed;
+
+  return { label, detail, status: normalizeIndicator(rawStatus) };
+};
+
+const dailyFactView = (fact: unknown, index: number) => {
+  if (typeof fact === "string") return { title: `Day ${index + 1}`, detail: fact };
+  const record = asRecord(fact);
+  if (!record) return { title: `Day ${index + 1}`, detail: "Coverage details unavailable" };
+
+  const title = firstDisplayValue(record, ["date", "label", "day"]) || `Day ${index + 1}`;
+  const preferredKeys = [
+    "projectedAvailable",
+    "activeEmployees",
+    "approvedAway",
+    "pendingRequests",
+    "projectedPercent",
+    "requiredCount",
+    "requiredPercent",
+    "available",
+    "availableCount",
+    "availableStaff",
+    "total",
+    "totalStaff",
+    "absent",
+    "unavailable",
+    "coveragePercentage",
+    "coveragePercent",
+    "risk",
+  ];
+  const detailParts = preferredKeys.flatMap((key) => {
+    const value = humanizeValue(record[key]);
+    if (!value) return [];
+    const label = key.replace(/([A-Z])/g, " $1").replace(/^./, (character) => character.toUpperCase());
+    return [`${label}: ${value}${key.toLowerCase().includes("percent") ? "%" : ""}`];
+  });
+  const explicitDetail = firstDisplayValue(record, ["message", "detail", "description", "reason"]);
+
+  return { title, detail: explicitDetail || detailParts.join(" • ") || "Coverage calculated" };
+};
+
+const recommendedDateLabel = (recommendation: unknown, index: number) => {
+  if (typeof recommendation === "string") return recommendation;
+  const record = asRecord(recommendation);
+  if (!record) return `Alternative ${index + 1}`;
+  const start = firstDisplayValue(record, ["startDate", "start_date", "start"]);
+  const end = firstDisplayValue(record, ["endDate", "end_date", "end"]);
+  const label = firstDisplayValue(record, ["label", "title", "date"]);
+  const reason = firstDisplayValue(record, ["reason", "message", "detail"]);
+  const range = start ? `${start}${end && end !== start ? ` to ${end}` : ""}` : label || `Alternative ${index + 1}`;
+  return reason ? `${range} — ${reason}` : range;
+};
 
 export const ManagerDashboard: React.FC = () => {
   const { user, token, refreshProfile } = useAuth();
@@ -41,6 +192,7 @@ export const ManagerDashboard: React.FC = () => {
   // Review states
   const [reviewRequest, setReviewRequest] = useState<LeaveRequest | null>(null);
   const [reviewComment, setReviewComment] = useState<string>("");
+  const [coverageOverrideReason, setCoverageOverrideReason] = useState<string>("");
   const [reviewLoading, setReviewLoading] = useState<boolean>(false);
 
   // Edit Balance states
@@ -78,6 +230,19 @@ export const ManagerDashboard: React.FC = () => {
     loadManagerData();
   }, [token]);
 
+  useEffect(() => {
+    if (!reviewRequest) return;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !reviewLoading) {
+        setReviewRequest(null);
+        setReviewComment("");
+        setCoverageOverrideReason("");
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [reviewRequest, reviewLoading]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadManagerData();
@@ -86,11 +251,31 @@ export const ManagerDashboard: React.FC = () => {
   // Approve leave
   const handleApprove = async (id: string) => {
     if (!token) return;
+    const intelligentRequest = hasIntelligenceData(reviewRequest) ? reviewRequest : null;
+    if (intelligentRequest?.policyEvaluation?.outcome === "warning" && !reviewComment.trim()) {
+      alert("Add a manager comment explaining how the policy warning was considered.");
+      return;
+    }
+    if (intelligentRequest?.coverageImpact?.level === "high" && coverageOverrideReason.trim().length < 20) {
+      alert("Enter an override reason of at least 20 characters for this high-risk request.");
+      return;
+    }
+    const handoverRequired = Boolean(intelligentRequest?.handover?.required || intelligentRequest?.coverageImpact?.handoverRequired);
+    if (handoverRequired && intelligentRequest?.handover?.status !== "ready") {
+      alert("This request cannot be approved until its required handover is ready.");
+      return;
+    }
     try {
       setReviewLoading(true);
-      await DbService.approveLeaveRequest(token, id, reviewComment);
+      const decisionService = DbService as DecisionService;
+      if (intelligentRequest && decisionService.processLeaveRequestV2) {
+        await decisionService.processLeaveRequestV2(id, "approve", reviewComment.trim(), coverageOverrideReason.trim());
+      } else {
+        await DbService.approveLeaveRequest(token, id, reviewComment);
+      }
       setReviewRequest(null);
       setReviewComment("");
+      setCoverageOverrideReason("");
       await loadManagerData();
       await refreshProfile(); // Refresh current user context in header too
     } catch (err: any) {
@@ -104,11 +289,22 @@ export const ManagerDashboard: React.FC = () => {
   // Reject leave
   const handleReject = async (id: string) => {
     if (!token) return;
+    const intelligentRequest = hasIntelligenceData(reviewRequest) ? reviewRequest : null;
+    if (intelligentRequest?.policyEvaluation?.outcome === "warning" && !reviewComment.trim()) {
+      alert("Add a manager comment explaining how the policy warning affected this decision.");
+      return;
+    }
     try {
       setReviewLoading(true);
-      await DbService.rejectLeaveRequest(token, id, reviewComment);
+      const decisionService = DbService as DecisionService;
+      if (intelligentRequest && decisionService.processLeaveRequestV2) {
+        await decisionService.processLeaveRequestV2(id, "reject", reviewComment.trim(), "");
+      } else {
+        await DbService.rejectLeaveRequest(token, id, reviewComment);
+      }
       setReviewRequest(null);
       setReviewComment("");
+      setCoverageOverrideReason("");
       await loadManagerData();
       await refreshProfile();
     } catch (err: any) {
@@ -127,6 +323,7 @@ export const ManagerDashboard: React.FC = () => {
       await DbService.approveLeaveCancellation(token, id);
       setReviewRequest(null);
       setReviewComment("");
+      setCoverageOverrideReason("");
       await loadManagerData();
       await refreshProfile();
     } catch (err: any) {
@@ -145,6 +342,7 @@ export const ManagerDashboard: React.FC = () => {
       await DbService.rejectLeaveCancellation(token, id, reviewComment);
       setReviewRequest(null);
       setReviewComment("");
+      setCoverageOverrideReason("");
       await loadManagerData();
       await refreshProfile();
     } catch (err: any) {
@@ -213,7 +411,7 @@ export const ManagerDashboard: React.FC = () => {
     const matchesSearch = 
       matchQuery === "" ||
       req.employeeName.toLowerCase().includes(matchQuery) ||
-      req.employeeEmail.toLowerCase().includes(matchQuery) ||
+      (req.employeeEmail || "").toLowerCase().includes(matchQuery) ||
       req.uid.toLowerCase().includes(matchQuery) ||
       dept.includes(matchQuery);
 
@@ -270,6 +468,30 @@ export const ManagerDashboard: React.FC = () => {
   // Highlight max leave utilization type
   const maxUsedType = stats ? Object.entries(stats.byType).reduce((a, b) => a[1] > b[1] ? a : b) : ["annual", 0];
 
+  const intelligentReviewRequest = hasIntelligenceData(reviewRequest) ? reviewRequest : null;
+  const isLeaveDecision = reviewRequest?.status === "pending";
+  const policyWarningNeedsComment = Boolean(
+    isLeaveDecision && intelligentReviewRequest?.policyEvaluation?.outcome === "warning" && !reviewComment.trim(),
+  );
+  const highCoverageNeedsOverride = Boolean(
+    isLeaveDecision && intelligentReviewRequest?.coverageImpact?.level === "high" && coverageOverrideReason.trim().length < 20,
+  );
+  const reviewHandoverRequired = Boolean(
+    isLeaveDecision && (intelligentReviewRequest?.handover?.required || intelligentReviewRequest?.coverageImpact?.handoverRequired),
+  );
+  const requiredHandoverNotReady = Boolean(
+    reviewHandoverRequired && intelligentReviewRequest?.handover?.status !== "ready",
+  );
+  const approveDisabled = reviewLoading || policyWarningNeedsComment || highCoverageNeedsOverride || requiredHandoverNotReady;
+  const rejectDisabled = reviewLoading || policyWarningNeedsComment;
+
+  const closeReview = () => {
+    if (reviewLoading) return;
+    setReviewRequest(null);
+    setReviewComment("");
+    setCoverageOverrideReason("");
+  };
+
   return (
     <div className="space-y-8 leavewise-dashboard leavewise-manager-dashboard">
       {error && (
@@ -299,6 +521,8 @@ export const ManagerDashboard: React.FC = () => {
         </div>
       </div>
 
+      <HolidayCalendarBar />
+
       {loading ? (
         <div className="py-24 text-center text-xs font-bold text-slate-400">Loading corporate leave databases...</div>
       ) : (
@@ -324,7 +548,7 @@ export const ManagerDashboard: React.FC = () => {
                 </div>
               </div>
               <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{stats?.approvedCount}</h3>
-              <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">Approved absences logged this year</p>
+              <p className="text-[10px] text-slate-400 mt-1.5 font-semibold">Approved absences currently recorded</p>
             </DraggableStatCard>
 
             <DraggableStatCard className="bg-white rounded-xl border border-slate-200/60 p-5 shadow-sm">
@@ -350,66 +574,7 @@ export const ManagerDashboard: React.FC = () => {
             </DraggableStatCard>
           </div>
 
-          {/* Visual Analytics & Statistics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Chart: Absence Type utilization */}
-            <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5">Leave Category Utilization (Approved Days)</h3>
-              <div className="space-y-4">
-                {stats && Object.entries(stats.byType).map(([type, val]) => {
-                  const value = val as number;
-                  const label = typeMap[type as LeaveType];
-                  const maxVal = Math.max(...(Object.values(stats.byType) as number[]), 1);
-                  const percent = (value / maxVal) * 100;
-
-                  return (
-                    <div key={type} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-700 capitalize">{label.name}</span>
-                        <span className="font-bold text-slate-900">{value} approved days</span>
-                      </div>
-                      <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full ${label.color} transition-all duration-500`}
-                          style={{ width: `${percent}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Department-wise absences */}
-            <div className="bg-white rounded-xl border border-slate-200/60 p-6 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-5">Department Utilization Matrix</h3>
-              <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1">
-                {stats && Object.keys(stats.byDepartment).length === 0 ? (
-                  <div className="text-center text-xs text-slate-400 py-12">No department records active.</div>
-                ) : (
-                  stats && Object.entries(stats.byDepartment).map(([dept, deptData]) => {
-                    const data = deptData as { approved: number; pending: number };
-                    return (
-                      <div key={dept} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200/40 text-xs">
-                        <div className="font-bold text-slate-800">{dept}</div>
-                        <div className="flex items-center space-x-3 text-slate-500 font-semibold">
-                          <span className="inline-flex items-center text-emerald-700 font-bold">
-                            {data.approved}d Approved
-                          </span>
-                          <span className="text-slate-200">|</span>
-                          <span className="inline-flex items-center text-amber-700 font-bold">
-                            {data.pending}d Pending
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-          </div>
+          <HrApprovedLeaveChart requests={requests} employees={employees} />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
@@ -592,6 +757,7 @@ export const ManagerDashboard: React.FC = () => {
                                     onClick={() => {
                                       setReviewRequest(req);
                                       setReviewComment("");
+                                      setCoverageOverrideReason("");
                                     }}
                                     className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-md transition"
                                   >
@@ -613,90 +779,351 @@ export const ManagerDashboard: React.FC = () => {
 
             {/* Inline Review Drawer / Modal */}
             {reviewRequest && (
-              <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 backdrop-blur-sm flex items-center justify-center p-4">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-lg w-full p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-bold text-slate-900">Review Leave Request</h3>
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4">
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="leave-review-title"
+                  aria-describedby="leave-review-description"
+                  className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-4xl w-full max-h-[calc(100vh-1.5rem)] overflow-y-auto p-4 sm:p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 id="leave-review-title" className="text-sm font-bold text-slate-900">Review Leave Request</h3>
+                      <p id="leave-review-description" className="text-[11px] text-slate-500 font-medium mt-1">
+                        Review the employee, policy, coverage and handover evidence before recording a decision.
+                      </p>
+                    </div>
                     <button 
-                      onClick={() => setReviewRequest(null)}
-                      className="text-slate-400 hover:text-slate-600 font-bold text-xs"
+                      type="button"
+                      onClick={closeReview}
+                      disabled={reviewLoading}
+                      aria-label="Close leave request review"
+                      className="text-slate-400 hover:text-slate-600 disabled:opacity-50 font-bold text-xs whitespace-nowrap"
                     >
                       ✕ Close
                     </button>
                   </div>
 
                   {/* Applicant Details */}
-                  <div className="p-4 bg-slate-50 border border-slate-200/50 rounded-lg space-y-2 text-xs font-semibold">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">APPLICANT:</span>
-                      <span className="font-bold text-slate-800">{reviewRequest.employeeName}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-slate-50 border border-slate-200/50 rounded-lg space-y-2 text-xs font-semibold">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Applicant:</span>
+                        <span className="font-bold text-slate-800 text-right">{reviewRequest.employeeName}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Leave type:</span>
+                        <span className="font-bold text-slate-800 capitalize text-right">{reviewRequest.leaveType}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Duration:</span>
+                        <span className="font-bold text-slate-800 text-right">{reviewRequest.startDate} to {reviewRequest.endDate}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Total days:</span>
+                        <span className="font-bold text-slate-900 text-right">{reviewRequest.totalDays} business days</span>
+                      </div>
+                      <div className="border-t border-slate-200/60 pt-2 mt-2">
+                        <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Applicant's reason:</span>
+                        <p className="text-slate-700 mt-1 font-medium leading-relaxed break-words">{reviewRequest.reason}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">LEAVE TYPE:</span>
-                      <span className="font-bold text-slate-800 capitalize">{reviewRequest.leaveType}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">DURATION:</span>
-                      <span className="font-bold text-slate-800">{reviewRequest.startDate} to {reviewRequest.endDate}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">TOTAL DAYS:</span>
-                      <span className="font-bold text-slate-900">{reviewRequest.totalDays} business days</span>
-                    </div>
-                    <div className="border-t border-slate-200/60 pt-2 mt-2">
-                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">APPLICANT'S REASON:</span>
-                      <p className="text-slate-700 mt-1 font-medium leading-relaxed">{reviewRequest.reason}</p>
-                    </div>
-                  </div>
 
-                  {/* Balances Context Alert */}
-                  {(() => {
-                    const applicant = employees.find((e) => e.uid === reviewRequest.uid);
-                    if (!applicant) return null;
-                    const cat = applicant.balances[reviewRequest.leaveType as LeaveType] || { total: 0, used: 0 };
-                    const remaining = cat.total - cat.used;
-                    const isOverdraft = reviewRequest.totalDays > remaining;
+                    {/* Balances Context Alert */}
+                    {(() => {
+                      const applicant = employees.find((e) => e.uid === reviewRequest.uid);
+                      if (!applicant?.balances) return null;
+                      const cat = applicant.balances[reviewRequest.leaveType as LeaveType] || { total: 0, used: 0 };
+                      const remaining = cat.total - cat.used;
+                      const isOverdraft = reviewRequest.totalDays > remaining;
 
-                    return (
-                      <div className="space-y-3">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Employee Balances Context</span>
-                        <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200/60 p-3 rounded-lg text-xs font-semibold">
-                          <div>
-                            <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Allowance Total:</span>
-                            <span className="font-bold text-slate-900">{cat.total} days</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Remaining Balance:</span>
-                            <span className={`font-bold ${isOverdraft ? "text-rose-600" : "text-slate-900"}`}>
-                              {remaining} days
-                            </span>
-                          </div>
-                        </div>
-
-                        {isOverdraft && (
-                          <div className="p-3 bg-amber-50 border border-amber-200/50 text-amber-900 rounded-lg flex items-start space-x-2.5 text-xs font-semibold leading-relaxed">
-                            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      return (
+                        <div className="space-y-3">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Employee Balance Context</span>
+                          <div className="grid grid-cols-2 gap-4 bg-slate-50 border border-slate-200/60 p-3 rounded-lg text-xs font-semibold">
                             <div>
-                              <span className="font-bold block text-amber-950">Overdraft Warning!</span>
-                              This request exceeds their remaining balance by <span className="font-bold">{reviewRequest.totalDays - remaining} days</span>.
+                              <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Allowance total:</span>
+                              <span className="font-bold text-slate-900">{cat.total} days</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 font-bold text-[9px] uppercase tracking-wider block">Remaining balance:</span>
+                              <span className={`font-bold ${isOverdraft ? "text-rose-600" : "text-slate-900"}`}>
+                                {remaining} days
+                              </span>
                             </div>
                           </div>
-                        )}
+
+                          {isOverdraft && (
+                            <div className="p-3 bg-amber-50 border border-amber-200/50 text-amber-900 rounded-lg flex items-start space-x-2.5 text-xs font-semibold leading-relaxed">
+                              <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold block text-amber-950">Overdraft warning</span>
+                                This request exceeds the remaining balance by <span className="font-bold">{reviewRequest.totalDays - remaining} days</span>.
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {intelligentReviewRequest ? (
+                    <div className="space-y-4" aria-label="Leave decision intelligence">
+                      {/* Explainable Policy Engine */}
+                      {intelligentReviewRequest.policyEvaluation && (
+                        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="policy-evaluation-title">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                            <div className="flex items-center gap-2.5">
+                              <span className="h-8 w-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                                <ClipboardCheck className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <h4 id="policy-evaluation-title" className="text-xs font-bold text-slate-900">Explainable Policy Evaluation</h4>
+                                <p className="text-[10px] text-slate-500 font-semibold">Policy version {intelligentReviewRequest.policyEvaluation.version}</p>
+                              </div>
+                            </div>
+                            <span className={`self-start sm:self-auto inline-flex items-center px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${indicatorClasses[normalizeIndicator(intelligentReviewRequest.policyEvaluation.outcome)]}`}>
+                              {intelligentReviewRequest.policyEvaluation.outcome}
+                            </span>
+                          </div>
+                          <div className="p-4">
+                            {intelligentReviewRequest.policyEvaluation.checks.length > 0 ? (
+                              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2" aria-label="Policy checks">
+                                {intelligentReviewRequest.policyEvaluation.checks.map((check, index) => {
+                                  const view = listItemView(check, `Policy check ${index + 1}`);
+                                  const Icon = view.status === "pass" ? CheckCircle : view.status === "fail" ? XCircle : view.status === "warning" ? AlertTriangle : Info;
+                                  return (
+                                    <li key={`${view.label}-${index}`} className={`rounded-lg border p-3 text-xs ${indicatorClasses[view.status]}`}>
+                                      <div className="flex items-start gap-2">
+                                        <Icon className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                        <div className="min-w-0">
+                                          <p className="font-bold capitalize break-words">{view.label}</p>
+                                          {view.detail && <p className="text-[11px] font-medium leading-relaxed mt-0.5 break-words opacity-90">{view.detail}</p>}
+                                        </div>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <p className="text-xs text-slate-500 font-medium">The stored result has no individual policy checks.</p>
+                            )}
+                          </div>
+                        </section>
+                      )}
+
+                      {/* Coverage Intelligence */}
+                      {intelligentReviewRequest.coverageImpact && (
+                        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="coverage-impact-title">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                            <div className="flex items-center gap-2.5">
+                              <span className="h-8 w-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                                <Gauge className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <h4 id="coverage-impact-title" className="text-xs font-bold text-slate-900">Team Coverage Intelligence</h4>
+                                <p className="text-[10px] text-slate-500 font-semibold">Stored at submission for a consistent HR review</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                              <span className="text-lg font-bold text-slate-900" aria-label={`Coverage score ${intelligentReviewRequest.coverageImpact.score}`}>
+                                {intelligentReviewRequest.coverageImpact.score}
+                                <span className="text-[10px] text-slate-400 ml-0.5">/100</span>
+                              </span>
+                              <span className={`inline-flex px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${indicatorClasses[normalizeIndicator(intelligentReviewRequest.coverageImpact.level)]}`}>
+                                {intelligentReviewRequest.coverageImpact.level} risk
+                              </span>
+                            </div>
+                          </div>
+                          <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Why this score</h5>
+                              {intelligentReviewRequest.coverageImpact.reasons.length > 0 ? (
+                                <ul className="space-y-2 text-xs text-slate-700 font-medium">
+                                  {intelligentReviewRequest.coverageImpact.reasons.map((reason, index) => (
+                                    <li key={`${reason}-${index}`} className="flex items-start gap-2">
+                                      <ChevronRight className="h-3.5 w-3.5 text-slate-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                      <span className="break-words">{reason}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-slate-500">No additional risk reasons were recorded.</p>
+                              )}
+
+                              {intelligentReviewRequest.coverageImpact.recommendedDates.length > 0 && (
+                                <div className="mt-4">
+                                  <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Safer alternatives</h5>
+                                  <ul className="space-y-1.5 text-[11px] text-slate-700 font-semibold">
+                                    {intelligentReviewRequest.coverageImpact.recommendedDates.map((recommendation, index) => (
+                                      <li key={index} className="rounded-md bg-emerald-50 border border-emerald-100 px-2.5 py-2 break-words">
+                                        {recommendedDateLabel(recommendation, index)}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Daily staffing facts</h5>
+                              {intelligentReviewRequest.coverageImpact.dailyFacts.length > 0 ? (
+                                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                  {intelligentReviewRequest.coverageImpact.dailyFacts.map((fact, index) => {
+                                    const view = dailyFactView(fact, index);
+                                    return (
+                                      <div key={`${view.title}-${index}`} className="rounded-lg bg-slate-50 border border-slate-200 p-2.5">
+                                        <p className="text-[11px] text-slate-900 font-bold">{view.title}</p>
+                                        <p className="text-[10px] text-slate-600 font-medium leading-relaxed mt-0.5 break-words">{view.detail}</p>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-slate-500">No daily staffing facts were recorded.</p>
+                              )}
+                            </div>
+                          </div>
+                        </section>
+                      )}
+
+                      {/* Handover Readiness */}
+                      {intelligentReviewRequest.handover && (
+                        <section className="rounded-xl border border-slate-200 bg-white overflow-hidden" aria-labelledby="handover-readiness-title">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200">
+                            <div className="flex items-center gap-2.5">
+                              <span className="h-8 w-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                                <UserCheck className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <h4 id="handover-readiness-title" className="text-xs font-bold text-slate-900">Handover Readiness</h4>
+                                <p className="text-[10px] text-slate-500 font-semibold">
+                                  {intelligentReviewRequest.handover.required ? "Required for this request" : "Optional for this request"}
+                                </p>
+                              </div>
+                            </div>
+                            <span className={`self-start sm:self-auto inline-flex px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider ${indicatorClasses[normalizeIndicator(intelligentReviewRequest.handover.status)]}`}>
+                              {intelligentReviewRequest.handover.status.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div className="space-y-3">
+                              <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Backup employee</span>
+                                <span className="font-bold text-slate-800">{intelligentReviewRequest.handover.backupName || "Not assigned"}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Handover summary</span>
+                                <p className="text-slate-700 font-medium mt-1 whitespace-pre-wrap break-words">
+                                  {intelligentReviewRequest.handover.summary || "No handover summary provided."}
+                                </p>
+                              </div>
+                              {intelligentReviewRequest.handover.acknowledgedAt && (
+                                <p className="text-[10px] font-semibold text-emerald-700">
+                                  Acknowledged {new Date(intelligentReviewRequest.handover.acknowledgedAt).toLocaleString()}
+                                </p>
+                              )}
+                              {intelligentReviewRequest.handover.declinedReason && (
+                                <div className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-rose-800 font-medium">
+                                  <span className="font-bold block">Decline reason</span>
+                                  {intelligentReviewRequest.handover.declinedReason}
+                                </div>
+                              )}
+                            </div>
+                            <div>
+                              <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Handover checklist</h5>
+                              {intelligentReviewRequest.handover.items.length > 0 ? (
+                                <ul className="space-y-2">
+                                  {intelligentReviewRequest.handover.items.map((item, index) => {
+                                    const view = listItemView(item, `Handover item ${index + 1}`);
+                                    const itemRecord = asRecord(item);
+                                    const completed = itemRecord?.completed === true || view.status === "pass";
+                                    return (
+                                      <li key={`${view.label}-${index}`} className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                                        {completed ? (
+                                          <CheckCircle className="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                        ) : (
+                                          <Clock className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                        )}
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-slate-800 break-words">{view.label}</p>
+                                          {view.detail && <p className="text-[10px] text-slate-600 mt-0.5 break-words">{view.detail}</p>}
+                                        </div>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              ) : (
+                                <p className="text-xs text-slate-500">No checklist items were provided.</p>
+                              )}
+                            </div>
+                          </div>
+                        </section>
+                      )}
+                    </div>
+                  ) : reviewRequest.status === "pending" ? (
+                    <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 flex items-start gap-2.5 text-xs text-sky-900">
+                      <Info className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                      <div>
+                        <span className="font-bold block">Legacy leave request</span>
+                        <span className="font-medium">This request was submitted before decision intelligence was enabled. It will continue through the original approval workflow.</span>
                       </div>
-                    );
-                  })()}
+                    </div>
+                  ) : null}
 
                   {/* Manager Comment */}
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Manager Comments</label>
+                    <label htmlFor="manager-review-comment" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
+                      Manager comments {intelligentReviewRequest?.policyEvaluation?.outcome === "warning" && reviewRequest.status === "pending" ? <span className="text-rose-600">(required)</span> : null}
+                    </label>
                     <textarea
+                      id="manager-review-comment"
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
                       placeholder="Provide reasoning, instructions, or guidelines..."
                       rows={3}
+                      aria-required={intelligentReviewRequest?.policyEvaluation?.outcome === "warning" && reviewRequest.status === "pending"}
+                      aria-invalid={policyWarningNeedsComment}
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                     ></textarea>
+                    {policyWarningNeedsComment && (
+                      <p className="mt-1.5 text-[10px] text-amber-700 font-semibold">Explain how the policy warning was considered before recording a decision.</p>
+                    )}
                   </div>
+
+                  {intelligentReviewRequest?.coverageImpact?.level === "high" && reviewRequest.status === "pending" && (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50/60 p-3">
+                      <label htmlFor="coverage-override-reason" className="block text-[10px] font-bold text-rose-800 uppercase tracking-widest mb-1.5">
+                        High-risk approval override reason <span aria-hidden="true">*</span>
+                      </label>
+                      <textarea
+                        id="coverage-override-reason"
+                        value={coverageOverrideReason}
+                        onChange={(event) => setCoverageOverrideReason(event.target.value)}
+                        placeholder="Explain why approving this high-risk period is operationally acceptable..."
+                        rows={3}
+                        minLength={20}
+                        aria-required="true"
+                        aria-invalid={highCoverageNeedsOverride}
+                        aria-describedby="coverage-override-help"
+                        className="w-full px-3 py-2 border border-rose-200 rounded-lg bg-white text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500/15 focus:border-rose-400 transition-all"
+                      />
+                      <div id="coverage-override-help" className="flex items-center justify-between gap-3 mt-1.5 text-[10px] font-semibold">
+                        <span className={highCoverageNeedsOverride ? "text-rose-700" : "text-emerald-700"}>At least 20 characters are required to approve.</span>
+                        <span className="text-slate-500 tabular-nums">{coverageOverrideReason.trim().length}/20</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {requiredHandoverNotReady && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 flex items-start gap-2.5 text-xs text-amber-900" role="alert">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                      <div>
+                        <span className="font-bold block">Approval is waiting for handover readiness</span>
+                        <span className="font-medium">The backup employee must acknowledge the required handover before HR can approve this absence.</span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-3 pt-2">
                     {reviewRequest.status === "cancellation_pending" ? (
@@ -704,33 +1131,33 @@ export const ManagerDashboard: React.FC = () => {
                         <button
                           onClick={() => handleRejectCancellation(reviewRequest.id)}
                           disabled={reviewLoading}
-                          className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-rose-700 text-xs font-bold rounded-lg transition"
+                          className="w-full py-2 border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 text-xs font-bold rounded-lg transition"
                         >
-                          Reject Cancellation
+                          {reviewLoading ? "Processing..." : "Reject Cancellation"}
                         </button>
                         <button
                           onClick={() => handleApproveCancellation(reviewRequest.id)}
                           disabled={reviewLoading}
-                          className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                          className="w-full py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition shadow-sm"
                         >
-                          Approve Cancellation
+                          {reviewLoading ? "Processing..." : "Approve Cancellation"}
                         </button>
                       </>
                     ) : (
                       <>
                         <button
                           onClick={() => handleReject(reviewRequest.id)}
-                          disabled={reviewLoading}
-                          className="w-full py-2 border border-slate-200 hover:bg-slate-50 text-rose-700 text-xs font-bold rounded-lg transition"
+                          disabled={rejectDisabled}
+                          className="w-full py-2 border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-rose-700 text-xs font-bold rounded-lg transition"
                         >
-                          Decline Request
+                          {reviewLoading ? "Processing..." : "Decline Request"}
                         </button>
                         <button
                           onClick={() => handleApprove(reviewRequest.id)}
-                          disabled={reviewLoading}
-                          className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                          disabled={approveDisabled}
+                          className="w-full py-2 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition shadow-sm"
                         >
-                          Approve Absence
+                          {reviewLoading ? "Processing..." : requiredHandoverNotReady ? "Handover Not Ready" : "Approve Absence"}
                         </button>
                       </>
                     )}

@@ -29,7 +29,121 @@ export interface LeaveBalance {
 
 export type LeaveType = 'annual' | 'sick' | 'casual' | 'parental';
 
+export type CalendarEventKind = 'government' | 'company';
+
+export interface CalendarEvent {
+  id?: string;
+  date: string;
+  title: string;
+  kind: CalendarEventKind;
+  note: string;
+}
+
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancellation_pending' | 'cancelled' | 'withdrawn';
+
+export type PolicyCheckStatus = 'pass' | 'warning' | 'fail';
+
+export interface PolicyCheck {
+  code: string;
+  label: string;
+  status: PolicyCheckStatus;
+  message: string;
+}
+
+export interface PolicyEvaluation {
+  id?: string;
+  outcome: PolicyCheckStatus;
+  version: number | string;
+  checks: PolicyCheck[];
+  evaluatedAt?: string;
+}
+
+export type CoverageRiskLevel = 'low' | 'moderate' | 'high';
+
+export interface CoverageDailyFact {
+  date: string;
+  activeEmployees: number;
+  approvedAway: number;
+  pendingRequests: number;
+  projectedAvailable: number;
+  projectedPercent: number;
+  requiredCount: number;
+  requiredPercent: number;
+  criticalRoleGaps?: string[];
+}
+
+export interface RecommendedDateRange {
+  startDate: string;
+  endDate: string;
+  score: number;
+  level: CoverageRiskLevel;
+}
+
+export interface CoverageImpact {
+  id?: string;
+  score: number;
+  level: CoverageRiskLevel;
+  reasons: string[];
+  dailyFacts: CoverageDailyFact[];
+  recommendedDates: RecommendedDateRange[];
+  handoverRequired: boolean;
+  evaluatedAt?: string;
+}
+
+export type HandoverStatus = 'not_required' | 'draft' | 'awaiting_acknowledgment' | 'ready' | 'declined';
+
+export interface HandoverItem {
+  id?: string;
+  title: string;
+  details?: string;
+  dueDate?: string;
+  resourceUrl?: string;
+  completedAt?: string;
+}
+
+export interface HandoverPlan {
+  id?: string;
+  required: boolean;
+  status: HandoverStatus;
+  backupUserId?: string;
+  backupName?: string;
+  summary?: string;
+  items: HandoverItem[];
+  acknowledgedAt?: string;
+  declinedReason?: string;
+}
+
+export interface LeaveRequestPreview {
+  previewId: string;
+  expiresAt: string;
+  workingDays: number;
+  policy: PolicyEvaluation;
+  coverage: CoverageImpact;
+}
+
+export interface HandoverCandidate {
+  uid: string;
+  name: string;
+  title: string;
+  department: string;
+}
+
+export interface IncomingHandoverAssignment {
+  planId: string;
+  leaveRequestId: string;
+  ownerName: string;
+  startDate: string;
+  endDate: string;
+  summary: string;
+  items: HandoverItem[];
+  status: HandoverStatus;
+}
+
+export interface LeaveRequestHandoverInput {
+  backupUserId: string;
+  summary: string;
+  items: HandoverItem[];
+}
 
 export interface LeaveRequest {
   id: string;
@@ -67,6 +181,11 @@ export interface LeaveRequest {
   managerComment?: string;
   processedAt?: string;
   processedBy?: string; // UID of manager/actor
+
+  policyEvaluation?: PolicyEvaluation;
+  coverageImpact?: CoverageImpact;
+  currentCoverageImpact?: CoverageImpact;
+  handover?: HandoverPlan;
 }
 
 export interface AuditLog {

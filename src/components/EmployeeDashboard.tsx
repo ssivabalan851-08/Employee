@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../lib/auth-context.tsx";
 import { 
   CalendarDays, 
@@ -23,6 +23,48 @@ import { LeaveType, LeaveRequest, LeaveStatus } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
 import { BrandLogo } from "./BrandLogo.tsx";
 import { DraggableStatCard } from "./DraggableStatCard.tsx";
+import { EmployeeLeaveUsageChart } from "./LeaveAnalyticsCharts.tsx";
+import { HolidayCalendarBar } from "./HolidayCalendarBar.tsx";
+import {
+  AssignedHandover,
+  HandoverCandidate,
+  HandoverDraft,
+  IncomingHandoversPanel,
+  LeaveIntelligencePanels,
+  LeaveIntelligencePreview,
+} from "./LeaveIntelligencePanels.tsx";
+
+type LeaveIntelligenceService = {
+  previewLeaveRequest: (leaveType: LeaveType, startDate: string, endDate: string, reason?: string) => Promise<LeaveIntelligencePreview>;
+  submitLeaveRequestV2: (request: {
+    previewId: string;
+    leaveType: LeaveType;
+    startDate: string;
+    endDate: string;
+    reason: string;
+    handover?: {
+      backupUserId: string;
+      summary: string;
+      items: Array<{ title: string; details?: string; dueDate?: string; resourceUrl?: string }>;
+    };
+  }) => Promise<{ warning?: string | null }>;
+  getHandoverCandidates: () => Promise<HandoverCandidate[]>;
+  getAssignedHandovers: () => Promise<AssignedHandover[]>;
+  respondToHandover: (planId: string, accepted: boolean, reason?: string) => Promise<unknown>;
+};
+
+const intelligenceService = DbService as unknown as Partial<LeaveIntelligenceService>;
+
+const createEmptyHandover = (): HandoverDraft => ({
+  backupUserId: "",
+  summary: "",
+  items: [{ title: "", details: "", dueDate: "", resourceUrl: "" }],
+});
+
+const featureIsUnavailable = (error: unknown) => {
+  const message = String((error as { message?: string })?.message || error || "").toLowerCase();
+  return ["pgrst202", "404", "not found", "does not exist", "undefined", "not available", "not implemented"].some((fragment) => message.includes(fragment));
+};
 
 export const EmployeeDashboard: React.FC = () => {
   const { user, balances, token, refreshProfile } = useAuth();
@@ -34,6 +76,24 @@ export const EmployeeDashboard: React.FC = () => {
   const [reason, setReason] = useState<string>("");
   const [formLoading, setFormLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Explainable policy, coverage intelligence, and handover workflow
+  const [preview, setPreview] = useState<LeaveIntelligencePreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
+  const [previewRefreshKey, setPreviewRefreshKey] = useState(0);
+  const previewRequestId = useRef(0);
+  const [handover, setHandover] = useState<HandoverDraft>(createEmptyHandover);
+  const [handoverCandidates, setHandoverCandidates] = useState<HandoverCandidate[]>([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [candidatesError, setCandidatesError] = useState<string | null>(null);
+
+  // Handover assignments where this employee is the nominated backup
+  const [assignedHandovers, setAssignedHandovers] = useState<AssignedHandover[]>([]);
+  const [assignedHandoversLoading, setAssignedHandoversLoading] = useState(false);
+  const [assignedHandoversError, setAssignedHandoversError] = useState<string | null>(null);
+  const [processingHandoverId, setProcessingHandoverId] = useState<string | null>(null);
 
   // Leave requests list
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
@@ -60,6 +120,13 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   const businessDays = calculateBusinessDays(startDate, endDate);
+  const effectiveWorkingDays = preview?.workingDays || businessDays;
+  const coverageLevel = String(preview?.coverage?.level || "").toLowerCase();
+  const handoverRequired = Boolean(
+    preview && !previewUnavailable && (preview.coverage?.handoverRequired || effectiveWorkingDays >= 3 || coverageLevel === "high")
+  );
+  const policyOutcome = String(preview?.policy?.outcome || "").toLowerCase();
+  const policyBlocksSubmission = ["fail", "failed", "blocked", "deny", "denied"].includes(policyOutcome);
 
   // Check if balance is insufficient
   const getRemainingBalance = (type: LeaveType): number => {
@@ -115,6 +182,29 @@ export const EmployeeDashboard: React.FC = () => {
     handleOpenReport(sortedApproved[0]);
   };
 
+  const loadAssignedHandovers = async () => {
+    if (!token || typeof intelligenceService.getAssignedHandovers !== "function") {
+      setAssignedHandovers([]);
+      setAssignedHandoversLoading(false);
+      return;
+    }
+    try {
+      setAssignedHandoversLoading(true);
+      setAssignedHandoversError(null);
+      const data = await intelligenceService.getAssignedHandovers();
+      setAssignedHandovers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load assigned handovers", error);
+      setAssignedHandoversError(
+        featureIsUnavailable(error)
+          ? null
+          : (error as { message?: string })?.message || "Assigned handovers could not be loaded."
+      );
+    } finally {
+      setAssignedHandoversLoading(false);
+    }
+  };
+
   const loadRequestsHistory = async () => {
     if (!token || !user) return;
     try {
@@ -136,7 +226,103 @@ export const EmployeeDashboard: React.FC = () => {
 
   useEffect(() => {
     loadRequestsHistory();
+    loadAssignedHandovers();
   }, [token, user]);
+
+  // Debounce previews while the employee is still selecting dates. A request id
+  // prevents a slower, older response from replacing the latest calculation.
+  useEffect(() => {
+    const requestId = ++previewRequestId.current;
+    setPreview(null);
+    setPreviewError(null);
+    setPreviewUnavailable(false);
+    setHandover(createEmptyHandover());
+    setHandoverCandidates([]);
+    setCandidatesError(null);
+
+    if (!startDate || !endDate || businessDays <= 0) {
+      setPreviewLoading(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      if (typeof intelligenceService.previewLeaveRequest !== "function") {
+        if (requestId === previewRequestId.current) {
+          setPreviewUnavailable(true);
+          setPreviewLoading(false);
+        }
+        return;
+      }
+
+      try {
+        setPreviewLoading(true);
+        const result = await intelligenceService.previewLeaveRequest(leaveType, startDate, endDate, reason);
+        if (requestId !== previewRequestId.current) return;
+        setPreview(result);
+      } catch (error) {
+        if (requestId !== previewRequestId.current) return;
+        if (featureIsUnavailable(error)) {
+          setPreviewUnavailable(true);
+        } else {
+          console.error("Leave intelligence preview failed", error);
+          setPreviewError((error as { message?: string })?.message || "LeaveWise could not verify the policy and coverage impact. Retry before submitting.");
+        }
+      } finally {
+        if (requestId === previewRequestId.current) setPreviewLoading(false);
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timer);
+  }, [leaveType, startDate, endDate, reason, businessDays, previewRefreshKey]);
+
+  useEffect(() => {
+    let active = true;
+    if (!handoverRequired) {
+      setHandoverCandidates([]);
+      setCandidatesLoading(false);
+      setCandidatesError(null);
+      return;
+    }
+
+    const loadCandidates = async () => {
+      if (typeof intelligenceService.getHandoverCandidates !== "function") {
+        if (active) setCandidatesError("The secure backup directory is unavailable. Contact HR before submitting this request.");
+        return;
+      }
+      try {
+        setCandidatesLoading(true);
+        setCandidatesError(null);
+        const candidates = await intelligenceService.getHandoverCandidates();
+        if (active) setHandoverCandidates(Array.isArray(candidates) ? candidates : []);
+      } catch (error) {
+        console.error("Failed to load handover candidates", error);
+        if (active) setCandidatesError((error as { message?: string })?.message || "Eligible backup employees could not be loaded. Contact HR.");
+      } finally {
+        if (active) setCandidatesLoading(false);
+      }
+    };
+
+    loadCandidates();
+    return () => { active = false; };
+  }, [handoverRequired]);
+
+  const handleHandoverResponse = async (planId: string, accepted: boolean, declineReason?: string) => {
+    if (typeof intelligenceService.respondToHandover !== "function") {
+      setAssignedHandoversError("Handover responses are temporarily unavailable. Please refresh and try again.");
+      return;
+    }
+    try {
+      setProcessingHandoverId(planId);
+      setAssignedHandoversError(null);
+      await intelligenceService.respondToHandover(planId, accepted, declineReason);
+      setMessage({ type: "success", text: accepted ? "Handover accepted. HR can now see your acknowledgment." : "Handover declined with your reason." });
+      await Promise.all([loadAssignedHandovers(), loadRequestsHistory()]);
+    } catch (error) {
+      setAssignedHandoversError((error as { message?: string })?.message || "Your handover response could not be saved.");
+    } finally {
+      setProcessingHandoverId(null);
+    }
+  };
 
   // Submit Leave Request
   const handleSubmit = async (e: React.FormEvent) => {
@@ -150,17 +336,74 @@ export const EmployeeDashboard: React.FC = () => {
       setMessage({ type: "error", text: "Your requested leave must include at least 1 working day (Saturdays and Sundays are excluded)." });
       return;
     }
+    if (previewLoading) {
+      setMessage({ type: "error", text: "Please wait while LeaveWise finishes the policy and coverage preview." });
+      return;
+    }
+    if (previewError) {
+      setMessage({ type: "error", text: "The leave preview failed. Retry the preview before submitting so the request is not sent without its policy and coverage checks." });
+      return;
+    }
+    if (!preview && !previewUnavailable) {
+      setMessage({ type: "error", text: "A leave preview is required before submission. Recheck the dates and try again." });
+      return;
+    }
+    if (policyBlocksSubmission) {
+      setMessage({ type: "error", text: "This request does not currently meet the required leave policy. Review the failed checks before submitting." });
+      return;
+    }
+    if (preview?.expiresAt && new Date(preview.expiresAt).getTime() <= Date.now()) {
+      setMessage({ type: "error", text: "This leave preview expired. A fresh policy and coverage check is being prepared." });
+      setPreviewRefreshKey((current) => current + 1);
+      return;
+    }
+    if (handoverRequired) {
+      if (handoverCandidates.length === 0 || candidatesError) {
+        setMessage({ type: "error", text: "A handover is required, but no eligible backup employee is available. Contact HR before submitting." });
+        return;
+      }
+      if (!handover.backupUserId || handover.summary.trim().length < 10 || handover.items.length === 0 || handover.items.some((item) => !item.title.trim())) {
+        setMessage({ type: "error", text: "Complete the backup employee, enter a handover summary of at least 10 characters, and fill every responsibility before submitting." });
+        return;
+      }
+    }
 
     try {
       setFormLoading(true);
       setMessage(null);
 
-      const result = await DbService.submitLeaveRequest(
-        token,
-        { leaveType, startDate, endDate, reason },
-        user?.name || "Employee",
-        user?.email || ""
-      );
+      let result: { warning?: string | null };
+      if (preview && !previewUnavailable) {
+        if (typeof intelligenceService.submitLeaveRequestV2 !== "function") {
+          throw new Error("The verified leave submission service is unavailable. Your request was not sent; refresh the page and try again.");
+        }
+        result = await intelligenceService.submitLeaveRequestV2({
+          previewId: preview.previewId,
+          leaveType,
+          startDate,
+          endDate,
+          reason: reason.trim(),
+          handover: handoverRequired ? {
+            backupUserId: handover.backupUserId,
+            summary: handover.summary.trim(),
+            items: handover.items.map((item) => ({
+              title: item.title.trim(),
+              ...(item.details.trim() ? { details: item.details.trim() } : {}),
+              ...(item.dueDate ? { dueDate: item.dueDate } : {}),
+              ...(item.resourceUrl.trim() ? { resourceUrl: item.resourceUrl.trim() } : {}),
+            })),
+          } : undefined,
+        });
+      } else {
+        // Compatibility path for deployments where the new preview RPC has not
+        // been installed yet. Hard preview failures never enter this branch.
+        result = await DbService.submitLeaveRequest(
+          token,
+          { leaveType, startDate, endDate, reason },
+          user?.name || "Employee",
+          user?.email || ""
+        );
+      }
 
       setMessage({
         type: "success",
@@ -172,6 +415,9 @@ export const EmployeeDashboard: React.FC = () => {
       setStartDate("");
       setEndDate("");
       setReason("");
+      setPreview(null);
+      setHandover(createEmptyHandover());
+      setHandoverCandidates([]);
       
       // Refresh balances and history
       await refreshProfile();
@@ -266,6 +512,8 @@ export const EmployeeDashboard: React.FC = () => {
         </div>
       </div>
 
+      <HolidayCalendarBar />
+
       {/* Guidance alert when no approved leave exists yet */}
       {reportNotice && (
         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200/80 flex items-start space-x-3 text-left animate-in fade-in duration-200 shadow-sm">
@@ -318,6 +566,8 @@ export const EmployeeDashboard: React.FC = () => {
           })}
         </div>
       </div>
+
+      <EmployeeLeaveUsageChart balances={balances} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Leave Request Form */}
@@ -408,13 +658,40 @@ export const EmployeeDashboard: React.FC = () => {
                 ></textarea>
               </div>
 
+              {businessDays > 0 && (
+                <LeaveIntelligencePanels
+                  preview={preview}
+                  previewLoading={previewLoading}
+                  previewError={previewError}
+                  previewUnavailable={previewUnavailable}
+                  onRetryPreview={() => setPreviewRefreshKey((current) => current + 1)}
+                  onSelectRecommendedDates={(recommendedStart, recommendedEnd) => {
+                    setStartDate(recommendedStart);
+                    setEndDate(recommendedEnd);
+                    setMessage(null);
+                  }}
+                  handoverRequired={handoverRequired}
+                  handover={handover}
+                  onHandoverChange={setHandover}
+                  candidates={handoverCandidates}
+                  candidatesLoading={candidatesLoading}
+                  candidatesError={candidatesError}
+                />
+              )}
+
               <button
                 type="submit"
-                disabled={formLoading}
+                disabled={
+                  formLoading ||
+                  previewLoading ||
+                  Boolean(previewError) ||
+                  policyBlocksSubmission ||
+                  (handoverRequired && (candidatesLoading || Boolean(candidatesError) || handoverCandidates.length === 0))
+                }
                 className="w-full flex items-center justify-center px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-all duration-150 disabled:opacity-50"
               >
                 <Send className="h-3.5 w-3.5 mr-2" />
-                {formLoading ? "Submitting Request..." : "Submit Leave Request"}
+                {formLoading ? "Submitting Request..." : preview ? "Submit Verified Leave Request" : "Submit Leave Request"}
               </button>
             </form>
           </div>
@@ -422,6 +699,15 @@ export const EmployeeDashboard: React.FC = () => {
 
         {/* Request History */}
         <div className="lg:col-span-2 space-y-6">
+          <IncomingHandoversPanel
+            handovers={assignedHandovers}
+            loading={assignedHandoversLoading}
+            error={assignedHandoversError}
+            processingPlanId={processingHandoverId}
+            onAccept={(planId) => handleHandoverResponse(planId, true)}
+            onDecline={(planId, declineReason) => handleHandoverResponse(planId, false, declineReason)}
+          />
+
           <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm p-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-2.5">
@@ -468,6 +754,9 @@ export const EmployeeDashboard: React.FC = () => {
                     {requests.map((req) => {
                       const style = typeMap[req.leaveType];
                       const badge = statusBadges[req.status];
+                      const requestCoverageLevel = req.coverageImpact?.level;
+                      const requestCoverageScore = req.coverageImpact?.score;
+                      const requestHandoverStatus = req.handover?.status;
                       const formattedDates = `${new Date(req.startDate).toLocaleDateString(undefined, {month: "short", day: "numeric"})} - ${new Date(req.endDate).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"})}`;
                       const canCancel = (req.status === "pending" || req.status === "approved");
                       const todayStr = new Date().toISOString().split("T")[0];
@@ -483,6 +772,26 @@ export const EmployeeDashboard: React.FC = () => {
                           <td className="py-4 text-slate-900 font-medium align-top">
                             <div>{formattedDates}</div>
                             <div className="text-[10px] text-slate-400 mt-0.5">Duration: <span className="font-bold text-slate-900">{req.duration ?? req.totalDays} business days</span></div>
+                            {(requestCoverageLevel || requestHandoverStatus) && (
+                              <div className="mt-1.5 flex flex-wrap gap-1">
+                                {requestCoverageLevel && (
+                                  <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${
+                                    requestCoverageLevel.toLowerCase() === "high"
+                                      ? "bg-rose-50 text-rose-700"
+                                      : requestCoverageLevel.toLowerCase() === "low"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : "bg-amber-50 text-amber-700"
+                                  }`}>
+                                    {requestCoverageLevel} coverage{typeof requestCoverageScore === "number" ? ` · ${Math.round(requestCoverageScore)}/100` : ""}
+                                  </span>
+                                )}
+                                {requestHandoverStatus && (
+                                  <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-violet-700">
+                                    Handover {requestHandoverStatus.replaceAll("_", " ")}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 max-w-xs align-top">
                             <div className="text-slate-700 font-medium">{req.reason}</div>
