@@ -108,7 +108,12 @@ const MainLayout: React.FC = () => {
 };
 
 export default function App() {
-  const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const basePath = import.meta.env.BASE_URL.replace(/\/+$/, "");
+  const requestPath = window.location.pathname;
+  const appPath = basePath && requestPath.startsWith(basePath)
+    ? requestPath.slice(basePath.length)
+    : requestPath;
+  const pathname = appPath.replace(/\/+$/, "") || "/";
 
   if (pathname === "/account-approval") {
     return (

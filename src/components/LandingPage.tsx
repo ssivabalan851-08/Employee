@@ -73,6 +73,7 @@ const PortalLink: React.FC<{
 );
 
 export const LandingPage: React.FC = () => {
+  const appUrl = (path: string) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
   const landingRef = React.useRef<HTMLDivElement>(null);
   const [productRole, setProductRole] = React.useState<"employee" | "manager">("employee");
   const [workflowRole, setWorkflowRole] = React.useState<keyof typeof workflows>("employee");
@@ -133,7 +134,7 @@ export const LandingPage: React.FC = () => {
       <header className="leavewise-landing__header">
         <nav className="leavewise-landing__nav-shell" aria-label="Main navigation">
           <a className="leavewise-landing__brand" href="#top" aria-label="LeaveWise home">
-            <img className="leavewise-landing__brand-mark" src="/leavewise-mark.png" alt="" aria-hidden="true" />
+            <img className="leavewise-landing__brand-mark" src={appUrl("leavewise-mark.png")} alt="" aria-hidden="true" />
             <span className="leavewise-landing__wordmark">Leave<span>Wise</span></span>
           </a>
 
@@ -156,8 +157,8 @@ export const LandingPage: React.FC = () => {
               {mobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
             </button>
             <ThemeToggle />
-            <a className="leavewise-landing__sign-in" href="/login">Sign in</a>
-            <a className="leavewise-landing__get-started" href="/login?mode=signup">
+            <a className="leavewise-landing__sign-in" href={appUrl("login")}>Sign in</a>
+            <a className="leavewise-landing__get-started" href={appUrl("login?mode=signup")}>
               Get started <ArrowRight aria-hidden="true" />
             </a>
           </div>
@@ -178,7 +179,7 @@ export const LandingPage: React.FC = () => {
                 to keep every team moving.
               </p>
               <div className="leavewise-landing__hero-actions">
-                <PortalLink href="/login?mode=signup">Start with LeaveWise</PortalLink>
+                <PortalLink href={appUrl("login?mode=signup")}>Start with LeaveWise</PortalLink>
                 <PortalLink href="#how-it-works" variant="secondary">See how it works</PortalLink>
               </div>
               <button type="button" className="leavewise-landing__demo-text" onClick={() => setShowDemo(true)}>
@@ -255,7 +256,7 @@ export const LandingPage: React.FC = () => {
 
                   <div className="leavewise-landing__hr-preview">
                     <article className="leavewise-landing__ui-card leavewise-landing__queue-card">
-                      <div className="leavewise-landing__ui-heading"><h2>Pending requests <b>8</b></h2><a href="/login?role=manager">View all</a></div>
+                      <div className="leavewise-landing__ui-heading"><h2>Pending requests <b>8</b></h2><a href={appUrl("login?role=manager")}>View all</a></div>
                       {[
                         ["AK", "Aisha Khan", "Annual leave", "12–16 Oct"],
                         ["RK", "Ravi Kumar", "Sick leave", "22 Oct"],
@@ -406,7 +407,7 @@ export const LandingPage: React.FC = () => {
               <h2>Make time off easier for everyone.</h2>
               <p>Bring requests, approvals, balances, and team visibility into one professional workspace.</p>
               <div className="leavewise-landing__closing-actions">
-                <PortalLink href="/login?mode=signup" variant="light">Create an account</PortalLink>
+                <PortalLink href={appUrl("login?mode=signup")} variant="light">Create an account</PortalLink>
                 <button type="button" className="leavewise-landing__button leavewise-landing__button--secondary" onClick={() => setShowDemo(true)}>
                   <span>Contact sales</span><ArrowRight aria-hidden="true" />
                 </button>
@@ -423,15 +424,15 @@ export const LandingPage: React.FC = () => {
       <footer className="leavewise-landing__footer">
         <div className="leavewise-landing__footer-main">
           <div>
-            <a className="leavewise-landing__brand" href="#top"><img className="leavewise-landing__brand-mark" src="/leavewise-mark.png" alt="" aria-hidden="true" /><span className="leavewise-landing__wordmark">Leave<span>Wise</span></span></a>
+            <a className="leavewise-landing__brand" href="#top"><img className="leavewise-landing__brand-mark" src={appUrl("leavewise-mark.png")} alt="" aria-hidden="true" /><span className="leavewise-landing__wordmark">Leave<span>Wise</span></span></a>
             <p>Making workplace time off simpler for everyone.</p>
           </div>
           <nav aria-label="Footer navigation">
             <a href="#product">Product</a>
             <a href="#how-it-works">How it works</a>
             <a href="#policies">Policies</a>
-            <a href="/login?role=employee">Employee sign in</a>
-            <a href="/login?role=manager">HR sign in</a>
+            <a href={appUrl("login?role=employee")}>Employee sign in</a>
+            <a href={appUrl("login?role=manager")}>HR sign in</a>
           </nav>
         </div>
         <div className="leavewise-landing__footer-meta">

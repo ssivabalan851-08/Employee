@@ -7,6 +7,6 @@ interface BrandLogoProps {
 
 export const BrandLogo: React.FC<BrandLogoProps> = ({ className = "", compact = false }) => (
   <span className={`leavewise-logo ${compact ? "leavewise-logo--compact" : "leavewise-logo--full"} ${className}`}>
-    <img src="/leavewise-logo.png" alt="LeaveWise" />
+    <img src={`${import.meta.env.BASE_URL}leavewise-logo.png`} alt="LeaveWise" />
   </span>
 );
