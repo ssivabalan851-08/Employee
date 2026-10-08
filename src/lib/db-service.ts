@@ -308,7 +308,7 @@ export const DbService = {
     }
     const user = profileFromRow(profileRow);
     if (!user.approvalStatus || user.approvalStatus === "pending") {
-      throw new Error("Your account request is waiting for administrator approval. LeaveWise will send an SMS to your registered mobile number after approval.");
+      throw new Error("Your account request is waiting for administrator approval. LeaveWise will email your registered address after the administrator reviews it.");
     }
     if (user.approvalStatus === "rejected") {
       throw new Error("This account request was not approved. Contact LeaveWise support if you need clarification.");

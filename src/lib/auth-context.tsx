@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       try {
         await supabaseAuth.requestAccountApproval(result.user.id);
-        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. After approval, LeaveWise will send an SMS to ${phoneNumber}.`);
+        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. LeaveWise will automatically email ${email} after the administrator reviews the request.`);
       } catch {
         setAuthNotice("Your account was created and is waiting for approval, but the administrator notification was delayed. Choose Sign In with the same credentials to retry the notification.");
       } finally {

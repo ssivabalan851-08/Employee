@@ -15,7 +15,6 @@ export interface AccountApprovalResult {
   title: string;
   message: string;
   kind: "success" | "warning" | "error";
-  whatsapp_url?: string;
 }
 
 function configurationError() {

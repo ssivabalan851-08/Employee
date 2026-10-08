@@ -1293,7 +1293,6 @@ textarea:focus-visible,
 .leavewise-approval-login-link:hover { background: #1e1b4b !important; }
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) { background: #4338ca !important; }
 .leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle):hover { background: #6d28d9 !important; }
-.leavewise-approval a[href*="whatsapp"] { background: #25d366 !important; }
 
 .leavewise-theme-toggle {
   display: inline-flex;

@@ -453,7 +453,7 @@ export const LoginScreen: React.FC = () => {
                       className="w-full pl-10 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                     />
                   </div>
-                  <p className="mt-1.5 text-[10px] font-medium text-slate-400">By submitting, you agree to receive one SMS about the account approval decision.</p>
+                  <p className="mt-1.5 text-[10px] font-medium text-slate-400">LeaveWise will email your registered address after the administrator reviews this account request.</p>
                 </div>
 
                 {/* Password */}
