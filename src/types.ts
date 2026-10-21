@@ -29,6 +29,8 @@ export interface LeaveBalance {
 
 export type LeaveType = 'annual' | 'sick' | 'casual' | 'parental';
 
+export type LeaveDayPortion = 'full_day' | 'morning' | 'afternoon';
+
 export type CalendarEventKind = 'government' | 'company';
 
 export interface CalendarEvent {
@@ -159,6 +161,7 @@ export interface LeaveRequest {
 
   startDate: string; // YYYY-MM-DD
   endDate: string; // YYYY-MM-DD
+  dayPortion: LeaveDayPortion;
   
   duration: number; // new field (synced with totalDays)
   totalDays: number; // original field

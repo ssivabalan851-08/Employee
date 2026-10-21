@@ -8,6 +8,7 @@ import {
   HandoverPlan,
   IncomingHandoverAssignment,
   LeaveBalance,
+  LeaveDayPortion,
   LeaveRequest,
   LeaveRequestHandoverInput,
   LeaveRequestPreview,
@@ -21,6 +22,7 @@ import {
   UserProfile,
 } from "../types.ts";
 import { callRpc, supabaseRequest } from "./supabase.ts";
+import { calculateRequestedLeaveDays } from "./leave-duration.ts";
 
 const jsonHeaders = { "Content-Type": "application/json" };
 const encode = encodeURIComponent;
@@ -213,17 +215,6 @@ export function canTransitionLeaveStatus(current: LeaveStatus, next: LeaveStatus
   return false;
 }
 
-export function calculateBusinessDays(startDateStr: string, endDateStr: string) {
-  const start = new Date(`${startDateStr}T00:00:00`);
-  const end = new Date(`${endDateStr}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
-  let count = 0;
-  for (const day = new Date(start); day <= end; day.setDate(day.getDate() + 1)) {
-    if (day.getDay() !== 0 && day.getDay() !== 6) count += 1;
-  }
-  return count;
-}
-
 const profileFromRow = (r: any): UserProfile => ({
   uid: r.id,
   email: r.email,
@@ -239,15 +230,16 @@ const profileFromRow = (r: any): UserProfile => ({
 });
 const balanceFromRow = (r: any): LeaveBalance => ({
   uid: r.user_id,
-  annual: { total: r.annual_total, used: r.annual_used },
-  sick: { total: r.sick_total, used: r.sick_used },
-  casual: { total: r.casual_total, used: r.casual_used },
-  parental: { total: r.parental_total, used: r.parental_used },
+  annual: { total: Number(r.annual_total), used: Number(r.annual_used) },
+  sick: { total: Number(r.sick_total), used: Number(r.sick_used) },
+  casual: { total: Number(r.casual_total), used: Number(r.casual_used) },
+  parental: { total: Number(r.parental_total), used: Number(r.parental_used) },
 });
 const requestFromRow = (r: any): LeaveRequest => ({
   id: r.id, uid: r.user_id, employeeId: r.user_id, employeeName: r.employee_name, employeeEmail: r.employee_email,
   department: r.department, leaveType: r.leave_type, startDate: r.start_date, endDate: r.end_date,
-  duration: r.total_days, totalDays: r.total_days, reason: r.reason, status: r.status,
+  dayPortion: (r.day_portion || "full_day") as LeaveDayPortion,
+  duration: Number(r.total_days), totalDays: Number(r.total_days), reason: r.reason, status: r.status,
   applicationDate: r.created_at, createdAt: r.created_at, updatedAt: r.updated_at,
   cancellationRequestedAt: r.cancellation_requested_at || undefined, cancellationReason: r.cancellation_reason || undefined,
   cancelledAt: r.cancelled_at || undefined, approvedAt: r.approved_at || undefined, rejectedAt: r.rejected_at || undefined,
@@ -351,25 +343,27 @@ export const DbService = {
     return all.filter((item) => item.leaveId === leaveId);
   },
 
-  async submitLeaveRequest(uid: string, request: { leaveType: LeaveType; startDate: string; endDate: string; reason: string }, employeeName: string, employeeEmail: string) {
-    const totalDays = calculateBusinessDays(request.startDate, request.endDate);
-    if (totalDays <= 0) throw new Error("Leave dates must include at least one working day.");
+  async submitLeaveRequest(uid: string, request: { leaveType: LeaveType; startDate: string; endDate: string; dayPortion: LeaveDayPortion; reason: string }, employeeName: string, employeeEmail: string) {
+    const totalDays = calculateRequestedLeaveDays(request.startDate, request.endDate, request.dayPortion);
+    if (totalDays <= 0) throw new Error("Choose a working day. Half-day leave must start and end on the same date.");
     const { user, balances } = await this.getProfileAndBalances(uid);
     const remaining = balances[request.leaveType].total - balances[request.leaveType].used;
     const isInsufficient = totalDays > remaining;
     const rows = await callRpc<any[]>("submit_leave_request", {
       p_leave_type: request.leaveType, p_start_date: request.startDate, p_end_date: request.endDate, p_reason: request.reason,
+      p_day_portion: request.dayPortion,
     });
     const created = requestFromRow(rows[0]);
     return { request: created, warning: isInsufficient ? `Your remaining ${request.leaveType} balance (${remaining} days) is below this request (${totalDays} days).` : null, isInsufficient };
   },
 
-  async previewLeaveRequest(leaveType: LeaveType, startDate: string, endDate: string, reason = "") {
+  async previewLeaveRequest(leaveType: LeaveType, startDate: string, endDate: string, reason = "", dayPortion: LeaveDayPortion = "full_day") {
     const result = await callRpc<any>("preview_leave_request", {
       p_leave_type: leaveType,
       p_start_date: startDate,
       p_end_date: endDate,
       p_reason: reason.trim(),
+      p_day_portion: dayPortion,
     });
     return previewFromValue(result);
   },
@@ -405,6 +399,7 @@ export const DbService = {
     leaveType: LeaveType;
     startDate: string;
     endDate: string;
+    dayPortion: LeaveDayPortion;
     reason: string;
     handover?: LeaveRequestHandoverInput;
   }) {
@@ -413,6 +408,7 @@ export const DbService = {
       p_start_date: input.startDate,
       p_end_date: input.endDate,
       p_reason: input.reason,
+      p_day_portion: input.dayPortion,
       p_coverage_snapshot_id: input.previewId,
       p_handover: input.handover || null,
     });

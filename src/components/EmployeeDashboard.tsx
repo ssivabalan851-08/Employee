@@ -19,8 +19,9 @@ import {
   ShieldCheck,
   Sparkles
 } from "lucide-react";
-import { LeaveType, LeaveRequest, LeaveStatus } from "../types.ts";
+import { LeaveDayPortion, LeaveType, LeaveRequest, LeaveStatus } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
+import { calculateRequestedLeaveDays, formatDayPortion, formatLeaveDays, isHalfDayPortion } from "../lib/leave-duration.ts";
 import { BrandLogo } from "./BrandLogo.tsx";
 import { DraggableStatCard } from "./DraggableStatCard.tsx";
 import { EmployeeLeaveUsageChart } from "./LeaveAnalyticsCharts.tsx";
@@ -35,12 +36,13 @@ import {
 } from "./LeaveIntelligencePanels.tsx";
 
 type LeaveIntelligenceService = {
-  previewLeaveRequest: (leaveType: LeaveType, startDate: string, endDate: string, reason?: string) => Promise<LeaveIntelligencePreview>;
+  previewLeaveRequest: (leaveType: LeaveType, startDate: string, endDate: string, reason?: string, dayPortion?: LeaveDayPortion) => Promise<LeaveIntelligencePreview>;
   submitLeaveRequestV2: (request: {
     previewId: string;
     leaveType: LeaveType;
     startDate: string;
     endDate: string;
+    dayPortion: LeaveDayPortion;
     reason: string;
     handover?: {
       backupUserId: string;
@@ -73,6 +75,7 @@ export const EmployeeDashboard: React.FC = () => {
   const [leaveType, setLeaveType] = useState<LeaveType>("annual");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
+  const [dayPortion, setDayPortion] = useState<LeaveDayPortion>("full_day");
   const [reason, setReason] = useState<string>("");
   const [formLoading, setFormLoading] = useState<boolean>(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -99,28 +102,8 @@ export const EmployeeDashboard: React.FC = () => {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [historyLoading, setHistoryLoading] = useState<boolean>(true);
 
-  // Dynamic calculation of business days (skipping weekends)
-  const calculateBusinessDays = (startStr: string, endStr: string): number => {
-    if (!startStr || !endStr) return 0;
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
-    if (start > end) return 0;
-
-    let count = 0;
-    const cur = new Date(start);
-    while (cur <= end) {
-      const dayOfWeek = cur.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Skip Sat and Sun
-        count++;
-      }
-      cur.setDate(cur.getDate() + 1);
-    }
-    return count;
-  };
-
-  const businessDays = calculateBusinessDays(startDate, endDate);
-  const effectiveWorkingDays = preview?.workingDays || businessDays;
+  const requestedDays = calculateRequestedLeaveDays(startDate, endDate, dayPortion);
+  const effectiveWorkingDays = preview?.workingDays ?? requestedDays;
   const coverageLevel = String(preview?.coverage?.level || "").toLowerCase();
   const handoverRequired = Boolean(
     preview && !previewUnavailable && (preview.coverage?.handoverRequired || effectiveWorkingDays >= 3 || coverageLevel === "high")
@@ -136,7 +119,7 @@ export const EmployeeDashboard: React.FC = () => {
   };
 
   const remainingBalance = getRemainingBalance(leaveType);
-  const isInsufficient = businessDays > remainingBalance;
+  const isInsufficient = requestedDays > remainingBalance;
 
   // Load history & audit trail
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -240,7 +223,7 @@ export const EmployeeDashboard: React.FC = () => {
     setHandoverCandidates([]);
     setCandidatesError(null);
 
-    if (!startDate || !endDate || businessDays <= 0) {
+    if (!startDate || !endDate || requestedDays <= 0) {
       setPreviewLoading(false);
       return;
     }
@@ -256,7 +239,7 @@ export const EmployeeDashboard: React.FC = () => {
 
       try {
         setPreviewLoading(true);
-        const result = await intelligenceService.previewLeaveRequest(leaveType, startDate, endDate, reason);
+        const result = await intelligenceService.previewLeaveRequest(leaveType, startDate, endDate, reason, dayPortion);
         if (requestId !== previewRequestId.current) return;
         setPreview(result);
       } catch (error) {
@@ -273,7 +256,7 @@ export const EmployeeDashboard: React.FC = () => {
     }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [leaveType, startDate, endDate, reason, businessDays, previewRefreshKey]);
+  }, [leaveType, startDate, endDate, reason, dayPortion, requestedDays, previewRefreshKey]);
 
   useEffect(() => {
     let active = true;
@@ -332,8 +315,10 @@ export const EmployeeDashboard: React.FC = () => {
       setMessage({ type: "error", text: "Please enter start and end dates." });
       return;
     }
-    if (businessDays <= 0) {
-      setMessage({ type: "error", text: "Your requested leave must include at least 1 working day (Saturdays and Sundays are excluded)." });
+    if (requestedDays <= 0) {
+      setMessage({ type: "error", text: isHalfDayPortion(dayPortion)
+        ? "Half-day leave must use one working date for both the start and end date."
+        : "Your requested leave must include at least 1 working day (weekends and company holidays are excluded)." });
       return;
     }
     if (previewLoading) {
@@ -382,6 +367,7 @@ export const EmployeeDashboard: React.FC = () => {
           leaveType,
           startDate,
           endDate,
+          dayPortion,
           reason: reason.trim(),
           handover: handoverRequired ? {
             backupUserId: handover.backupUserId,
@@ -399,7 +385,7 @@ export const EmployeeDashboard: React.FC = () => {
         // been installed yet. Hard preview failures never enter this branch.
         result = await DbService.submitLeaveRequest(
           token,
-          { leaveType, startDate, endDate, reason },
+          { leaveType, startDate, endDate, dayPortion, reason },
           user?.name || "Employee",
           user?.email || ""
         );
@@ -414,6 +400,7 @@ export const EmployeeDashboard: React.FC = () => {
       // Clear form
       setStartDate("");
       setEndDate("");
+      setDayPortion("full_day");
       setReason("");
       setPreview(null);
       setHandover(createEmptyHandover());
@@ -605,6 +592,27 @@ export const EmployeeDashboard: React.FC = () => {
                 </select>
               </div>
 
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Leave Duration</label>
+                <select
+                  value={dayPortion}
+                  onChange={(e) => {
+                    const nextPortion = e.target.value as LeaveDayPortion;
+                    setDayPortion(nextPortion);
+                    if (isHalfDayPortion(nextPortion) && startDate) setEndDate(startDate);
+                    setMessage(null);
+                  }}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg bg-white text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+                >
+                  <option value="full_day">Full day</option>
+                  <option value="morning">Morning half day (0.5 day)</option>
+                  <option value="afternoon">Afternoon half day (0.5 day)</option>
+                </select>
+                <p className="mt-1.5 text-[10px] font-medium text-slate-400">
+                  Half-day leave uses one working date and deducts exactly 0.5 day after HR approval.
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Start Date</label>
@@ -612,7 +620,10 @@ export const EmployeeDashboard: React.FC = () => {
                     type="date"
                     required
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setStartDate(e.target.value);
+                      if (isHalfDayPortion(dayPortion)) setEndDate(e.target.value);
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
                   />
                 </div>
@@ -623,25 +634,26 @@ export const EmployeeDashboard: React.FC = () => {
                     required
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all"
+                    disabled={isHalfDayPortion(dayPortion)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-slate-800 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-900 transition-all disabled:bg-slate-50 disabled:text-slate-500"
                   />
                 </div>
               </div>
 
-              {businessDays > 0 && (
+              {requestedDays > 0 && (
                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 flex justify-between items-center text-xs text-slate-800">
-                  <span className="font-semibold text-slate-500">Calculated Business Days:</span>
-                  <span className="font-bold text-slate-950">{businessDays} working days</span>
+                  <span className="font-semibold text-slate-500">Calculated leave:</span>
+                  <span className="font-bold text-slate-950">{formatLeaveDays(requestedDays)} · {formatDayPortion(dayPortion)}</span>
                 </div>
               )}
 
               {/* Overdraft Warning Banner */}
-              {businessDays > 0 && isInsufficient && (
+              {requestedDays > 0 && isInsufficient && (
                 <div className="p-3.5 bg-amber-50/50 rounded-lg border border-amber-200/50 flex items-start space-x-3 text-xs text-amber-900 leading-relaxed">
                   <AlertTriangle className="h-4.5 w-4.5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <span className="font-bold block mb-0.5 text-amber-900">Overdraft Alert</span>
-                    Requested <span className="font-bold">{businessDays} days</span> exceeds your remaining {leaveType} balance of <span className="font-bold">{remainingBalance} days</span>. This request will be flagged for review.
+                    Requested <span className="font-bold">{formatLeaveDays(requestedDays)}</span> exceeds your remaining {leaveType} balance of <span className="font-bold">{formatLeaveDays(remainingBalance)}</span>. This request will be flagged for review.
                   </div>
                 </div>
               )}
@@ -658,7 +670,7 @@ export const EmployeeDashboard: React.FC = () => {
                 ></textarea>
               </div>
 
-              {businessDays > 0 && (
+              {requestedDays > 0 && (
                 <LeaveIntelligencePanels
                   preview={preview}
                   previewLoading={previewLoading}
@@ -667,7 +679,7 @@ export const EmployeeDashboard: React.FC = () => {
                   onRetryPreview={() => setPreviewRefreshKey((current) => current + 1)}
                   onSelectRecommendedDates={(recommendedStart, recommendedEnd) => {
                     setStartDate(recommendedStart);
-                    setEndDate(recommendedEnd);
+                    setEndDate(isHalfDayPortion(dayPortion) ? recommendedStart : recommendedEnd);
                     setMessage(null);
                   }}
                   handoverRequired={handoverRequired}
@@ -771,7 +783,9 @@ export const EmployeeDashboard: React.FC = () => {
                           </td>
                           <td className="py-4 text-slate-900 font-medium align-top">
                             <div>{formattedDates}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">Duration: <span className="font-bold text-slate-900">{req.duration ?? req.totalDays} business days</span></div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">
+                              Duration: <span className="font-bold text-slate-900">{formatLeaveDays(req.duration ?? req.totalDays)} · {formatDayPortion(req.dayPortion)}</span>
+                            </div>
                             {(requestCoverageLevel || requestHandoverStatus) && (
                               <div className="mt-1.5 flex flex-wrap gap-1">
                                 {requestCoverageLevel && (
@@ -973,7 +987,7 @@ export const EmployeeDashboard: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Duration:</span>
-                <span className="text-slate-900 font-bold">{cancellingRequest.duration ?? cancellingRequest.totalDays} business days</span>
+                <span className="text-slate-900 font-bold">{formatLeaveDays(cancellingRequest.duration ?? cancellingRequest.totalDays)} · {formatDayPortion(cancellingRequest.dayPortion)}</span>
               </div>
             </div>
 
@@ -1080,7 +1094,7 @@ export const EmployeeDashboard: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs text-emerald-800 mt-1 font-medium leading-relaxed">
-                    This leave request has been officially approved by HR operations. Required business days have been deducted from the employee's entitled leave allowance.
+                    This leave request has been officially approved by HR operations. The approved leave duration has been deducted from the employee's entitled leave allowance.
                   </p>
                   {selectedReportRequest.managerComment && (
                     <div className="mt-2 text-[11px] text-emerald-900 bg-white/70 border border-emerald-200/60 p-2 rounded-lg font-medium">
@@ -1134,7 +1148,7 @@ export const EmployeeDashboard: React.FC = () => {
                   <div className="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100">
                     <span className="text-[10px] text-slate-400 block font-semibold">Approved Duration</span>
                     <span className="text-xs font-extrabold text-slate-900 block mt-0.5">
-                      {selectedReportRequest.duration ?? selectedReportRequest.totalDays} Business Days
+                      {formatLeaveDays(selectedReportRequest.duration ?? selectedReportRequest.totalDays)} · {formatDayPortion(selectedReportRequest.dayPortion)}
                     </span>
                   </div>
                   <div className="p-2.5 bg-slate-50/80 rounded-lg border border-slate-100">
@@ -1224,7 +1238,7 @@ export const EmployeeDashboard: React.FC = () => {
 
                 <div className="mt-3.5 pt-3 border-t border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-emerald-900 font-semibold">
                   <span>
-                    ✓ Deducted <strong>{selectedReportRequest.duration ?? selectedReportRequest.totalDays} business days</strong> from {typeMap[selectedReportRequest.leaveType as LeaveType]?.name || selectedReportRequest.leaveType}.
+                    ✓ Deducted <strong>{formatLeaveDays(selectedReportRequest.duration ?? selectedReportRequest.totalDays)}</strong> from {typeMap[selectedReportRequest.leaveType as LeaveType]?.name || selectedReportRequest.leaveType}.
                   </span>
                   <span className="text-emerald-700 font-bold">
                     Zero-Trust Audit Verified

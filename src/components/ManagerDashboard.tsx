@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { LeaveRequest, LeaveStatistics, LeaveType, LeaveStatus, UserProfile } from "../types.ts";
 import { DbService } from "../lib/db-service.ts";
+import { formatDayPortion, formatLeaveDays } from "../lib/leave-duration.ts";
 import { DraggableStatCard } from "./DraggableStatCard.tsx";
 import { HrApprovedLeaveChart } from "./LeaveAnalyticsCharts.tsx";
 import { HolidayCalendarBar } from "./HolidayCalendarBar.tsx";
@@ -732,7 +733,9 @@ export const ManagerDashboard: React.FC = () => {
                               </td>
                               <td className="py-4 text-slate-700 font-medium align-top">
                                 <div>{formattedDates}</div>
-                                <div className="text-[10px] text-slate-400 mt-0.5">Duration: <span className="font-bold text-slate-950">{req.duration ?? req.totalDays} business days</span></div>
+                                <div className="text-[10px] text-slate-400 mt-0.5">
+                                  Duration: <span className="font-bold text-slate-950">{formatLeaveDays(req.duration ?? req.totalDays)} · {formatDayPortion(req.dayPortion)}</span>
+                                </div>
                               </td>
                               <td className="py-4 max-w-xs align-top">
                                 <div className="text-slate-800 font-medium">{req.reason}</div>
@@ -822,7 +825,7 @@ export const ManagerDashboard: React.FC = () => {
                       </div>
                       <div className="flex justify-between gap-4">
                         <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Total days:</span>
-                        <span className="font-bold text-slate-900 text-right">{reviewRequest.totalDays} business days</span>
+                        <span className="font-bold text-slate-900 text-right">{formatLeaveDays(reviewRequest.totalDays)} · {formatDayPortion(reviewRequest.dayPortion)}</span>
                       </div>
                       <div className="border-t border-slate-200/60 pt-2 mt-2">
                         <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Applicant's reason:</span>
@@ -859,7 +862,7 @@ export const ManagerDashboard: React.FC = () => {
                               <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-bold block text-amber-950">Overdraft warning</span>
-                                This request exceeds the remaining balance by <span className="font-bold">{reviewRequest.totalDays - remaining} days</span>.
+                                This request exceeds the remaining balance by <span className="font-bold">{formatLeaveDays(reviewRequest.totalDays - remaining)}</span>.
                               </div>
                             </div>
                           )}
