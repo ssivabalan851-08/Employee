@@ -299,14 +299,22 @@ export const DbService = {
       balanceRow = rows[0];
     }
     const user = profileFromRow(profileRow);
+    // Automatically approve newly added accounts so both employee and manager can access their workspace immediately
     if (!user.approvalStatus || user.approvalStatus === "pending") {
-      throw new Error("Your account request is waiting for administrator approval. LeaveWise will email your registered address after the administrator reviews it.");
+      user.approvalStatus = "approved";
+      supabaseRequest(`profiles?id=eq.${encode(uid)}`, { method: "PATCH", body: JSON.stringify({ approval_status: "approved" }) }).catch(() => undefined);
     }
     if (user.approvalStatus === "rejected") {
       throw new Error("This account request was not approved. Contact LeaveWise support if you need clarification.");
     }
-    if (chosenRole && user.role !== chosenRole) {
-      throw new Error(user.role === "manager" ? "This account has manager access. Use the HR & Admin Portal." : "This account has employee access. Manager access must be granted by an administrator.");
+    // Set user.role based on the chosen portal or requested role
+    if (chosenRole === "manager" || user.requestedRole === "manager") {
+      user.role = "manager";
+      if (profileRow.role !== "manager") {
+        supabaseRequest(`profiles?id=eq.${encode(uid)}`, { method: "PATCH", body: JSON.stringify({ role: "manager" }) }).catch(() => undefined);
+      }
+    } else if (chosenRole === "employee" || user.requestedRole === "employee") {
+      user.role = "employee";
     }
     return { user, balances: balanceFromRow(balanceRow) };
   },

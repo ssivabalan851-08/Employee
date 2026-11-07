@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
-import { ThemeToggle } from "./ThemeToggle.tsx";
 import { supabaseAuth } from "../lib/supabase.ts";
 import type { AccountApprovalResult } from "../lib/supabase.ts";
 
@@ -52,11 +51,10 @@ export const AccountApprovalPage: React.FC = () => {
 
   return (
     <main className="min-h-screen bg-[#f5f7fc] px-4 py-10 sm:py-16 flex items-center justify-center font-sans leavewise-approval">
-      <ThemeToggle floating />
-      <section className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(14,31,59,0.14)]">
-        <header className="bg-[#312e81] px-6 py-8 text-center leavewise-approval-header">
+      <section className="w-full max-w-xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(8,70,95,0.14)]">
+        <header className="bg-[#062c3c] px-6 py-8 text-center leavewise-approval-header">
           <BrandLogo className="mx-auto" />
-          <p className="mt-4 text-xs font-bold tracking-[0.2em] text-[#ddd6fe]">SECURE ACCOUNT APPROVAL</p>
+          <p className="mt-4 text-xs font-bold tracking-[0.2em] text-[#a9f4ef]">SECURE ACCOUNT APPROVAL</p>
         </header>
 
         <div className="px-6 py-8 sm:px-10 sm:py-10">
@@ -67,7 +65,7 @@ export const AccountApprovalPage: React.FC = () => {
               </div>
               <h1 className="mt-6 text-2xl font-extrabold tracking-tight text-slate-900">{displayedResult.title}</h1>
               <p className="mt-3 text-sm leading-7 text-slate-600">{displayedResult.message}</p>
-              <a href={`${import.meta.env.BASE_URL}login`} className="mt-7 leavewise-approval-login-link inline-flex min-h-12 items-center justify-center rounded-xl bg-[#312e81] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#7c3aed]">
+              <a href={`${import.meta.env.BASE_URL}login`} className="mt-7 leavewise-approval-login-link inline-flex min-h-12 items-center justify-center rounded-xl bg-[#087f8c] px-6 text-sm font-bold text-white shadow-sm transition hover:bg-[#066a75]">
                 Open LeaveWise
               </a>
             </div>
@@ -92,7 +90,7 @@ export const AccountApprovalPage: React.FC = () => {
                 type="button"
                 onClick={submitDecision}
                 disabled={submitting}
-                className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${approving ? "bg-[#4338ca] hover:bg-[#6d28d9]" : "bg-rose-700 hover:bg-rose-800"}`}
+                className={`mt-7 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold text-white shadow-sm transition disabled:cursor-not-allowed disabled:opacity-60 ${approving ? "bg-[#087f8c] hover:bg-[#066a75]" : "bg-rose-700 hover:bg-rose-800"}`}
               >
                 {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : approving ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
                 {submitting ? "Processing decision..." : approving ? "Confirm account approval" : "Confirm account rejection"}

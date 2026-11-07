@@ -2,20 +2,20 @@
 
 :root {
   color-scheme: light;
-  --lw-primary: #312e81;
-  --lw-primary-strong: #1e1b4b;
-  --lw-secondary: #7c3aed;
-  --lw-brand-gradient: linear-gradient(112deg, #312e81 0%, #7c3aed 100%);
-  --lw-accent: #a78bfa;
-  --lw-accent-strong: #7c3aed;
-  --lw-accent-soft: #ede9fe;
-  --lw-canvas: #f5f7fc;
+  --lw-primary: #062c3c;
+  --lw-primary-strong: #031720;
+  --lw-secondary: #087f8c;
+  --lw-brand-gradient: linear-gradient(112deg, #062c3c 0%, #087f8c 100%);
+  --lw-accent: #0eaaa7;
+  --lw-accent-strong: #087f8c;
+  --lw-accent-soft: #e3f8f7;
+  --lw-canvas: #f8fafc;
   --lw-surface: #ffffff;
-  --lw-surface-soft: #eaf0f8;
-  --lw-border: #c9d4e4;
-  --lw-text: #312e81;
-  --lw-muted: #50627d;
-  --lw-shadow: 0 18px 48px rgba(14, 31, 59, 0.12);
+  --lw-surface-soft: #f1f5f9;
+  --lw-border: #cbd5e1;
+  --lw-text: #082f49;
+  --lw-muted: #577084;
+  --lw-shadow: 0 18px 48px rgba(8, 70, 95, 0.12);
 }
 
 :root[data-theme="dark"] {
@@ -73,7 +73,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible {
-  outline: 3px solid rgba(167, 139, 250, 0.58) !important;
+  outline: 3px solid rgba(14, 170, 167, 0.45) !important;
   outline-offset: 2px;
 }
 
@@ -113,7 +113,7 @@ textarea:focus-visible,
   width: 52px;
   height: 42px;
   border-radius: 12px;
-  background: #312e81;
+  background: #062c3c;
   border: 1px solid var(--lw-border);
   box-shadow: 0 8px 20px rgba(13, 27, 53, 0.24);
 }
@@ -129,9 +129,9 @@ textarea:focus-visible,
 .leavewise-login,
 .leavewise-loading {
   background:
-    radial-gradient(circle at 11% 15%, rgba(167, 139, 250, 0.16), transparent 30%),
-    radial-gradient(circle at 88% 85%, rgba(38, 36, 95, 0.14), transparent 32%),
-    linear-gradient(135deg, #eef2f9 0%, #fafbfe 52%, #edf1f8 100%);
+    radial-gradient(circle at 11% 15%, rgba(14, 170, 167, 0.08), transparent 30%),
+    radial-gradient(circle at 88% 85%, rgba(8, 127, 140, 0.07), transparent 32%),
+    linear-gradient(135deg, #f0f7f8 0%, #fafcfd 52%, #edf5f6 100%);
 }
 
 .leavewise-login {
@@ -151,7 +151,7 @@ textarea:focus-visible,
   right: -120px;
   width: 380px;
   height: 380px;
-  background: rgba(167, 139, 250, 0.12);
+  background: rgba(14, 170, 167, 0.08);
 }
 
 .leavewise-login-orb--two {
@@ -159,7 +159,7 @@ textarea:focus-visible,
   left: -120px;
   width: 420px;
   height: 420px;
-  background: rgba(38, 36, 95, 0.09);
+  background: rgba(8, 127, 140, 0.06);
 }
 
 .leavewise-login-grid {
@@ -169,10 +169,10 @@ textarea:focus-visible,
   grid-template-columns: minmax(340px, 0.82fr) minmax(500px, 1.18fr);
   width: min(1120px, 100%);
   margin: auto;
-  border: 1px solid rgba(38, 36, 95, 0.12);
+  border: 1px solid rgba(8, 70, 95, 0.12);
   border-radius: 28px;
   background: white;
-  box-shadow: 0 32px 90px rgba(14, 31, 59, 0.16);
+  box-shadow: 0 32px 90px rgba(8, 70, 95, 0.14);
   overflow: hidden;
 }
 
@@ -184,9 +184,9 @@ textarea:focus-visible,
   padding: clamp(32px, 5vw, 64px);
   color: white;
   background:
-    linear-gradient(rgba(167, 139, 250, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(167, 139, 250, 0.045) 1px, transparent 1px),
-    linear-gradient(150deg, #312e81 0%, #1e1b4b 100%);
+    linear-gradient(rgba(14, 170, 167, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 170, 167, 0.045) 1px, transparent 1px),
+    linear-gradient(150deg, #062c3c 0%, #082f49 100%);
   background-size: 34px 34px, 34px 34px, auto;
 }
 
@@ -198,9 +198,9 @@ textarea:focus-visible,
   z-index: -1;
   width: 260px;
   height: 260px;
-  border: 1px solid rgba(167, 139, 250, 0.22);
+  border: 1px solid rgba(14, 170, 167, 0.22);
   border-radius: 50%;
-  box-shadow: 0 0 0 34px rgba(167, 139, 250, 0.04), 0 0 0 70px rgba(167, 139, 250, 0.025);
+  box-shadow: 0 0 0 34px rgba(14, 170, 167, 0.04), 0 0 0 70px rgba(14, 170, 167, 0.025);
 }
 
 .leavewise-brand-content {
@@ -267,7 +267,7 @@ textarea:focus-visible,
 .leavewise-auth-card input:focus,
 .leavewise-auth-card select:focus {
   border-color: var(--lw-accent) !important;
-  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+  box-shadow: 0 0 0 4px rgba(14, 170, 167, 0.18);
 }
 
 .leavewise-auth-card > div:first-child {
@@ -370,9 +370,9 @@ textarea:focus-visible,
   position: relative;
   overflow: hidden;
   color: white;
-  background: linear-gradient(120deg, var(--lw-primary) 0%, #7c3aed 100%) !important;
+  background: linear-gradient(120deg, var(--lw-primary) 0%, var(--lw-secondary) 100%) !important;
   border-color: transparent !important;
-  box-shadow: 0 18px 44px rgba(13, 27, 53, 0.18) !important;
+  box-shadow: 0 18px 44px rgba(8, 70, 95, 0.18) !important;
 }
 
 .leavewise-dashboard > .bg-white:first-of-type::after {
@@ -382,7 +382,7 @@ textarea:focus-visible,
   top: -75px;
   width: 220px;
   height: 220px;
-  border: 38px solid rgba(167, 139, 250, 0.12);
+  border: 38px solid rgba(14, 170, 167, 0.12);
   border-radius: 50%;
 }
 
@@ -401,11 +401,11 @@ textarea:focus-visible,
   position: relative;
   overflow: hidden;
   padding: 24px;
-  border: 1px solid rgba(167, 139, 250, 0.24);
+  border: 1px solid rgba(14, 170, 167, 0.24);
   border-radius: 18px;
   color: white;
-  background: linear-gradient(120deg, var(--lw-primary) 0%, #7c3aed 100%);
-  box-shadow: 0 18px 44px rgba(13, 27, 53, 0.18);
+  background: linear-gradient(120deg, var(--lw-primary) 0%, var(--lw-secondary) 100%);
+  box-shadow: 0 18px 44px rgba(8, 70, 95, 0.18);
 }
 
 .leavewise-page-heading::after {
@@ -481,7 +481,7 @@ textarea:focus-visible,
 .leavewise-dashboard select:focus,
 .leavewise-dashboard textarea:focus {
   border-color: var(--lw-accent) !important;
-  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+  box-shadow: 0 0 0 4px rgba(14, 170, 167, 0.18);
 }
 
 .leavewise-dashboard button:not([title="Edit limits"]) {
@@ -924,7 +924,7 @@ textarea:focus-visible,
 .leavewise-month-calendar__legend i.is-government { background: #2563eb; }
 .leavewise-month-calendar__legend i.is-company { background: #0e7490; }
 .leavewise-month-calendar__legend i.is-today {
-  border: 2px solid #7c3aed;
+  border: 2px solid var(--lw-accent-strong);
   background: transparent;
 }
 .leavewise-month-calendar__summary svg { width: 14px; height: 14px; color: #2563eb; }
@@ -981,9 +981,9 @@ textarea:focus-visible,
 
 .leavewise-month-calendar__day.is-today {
   z-index: 1;
-  outline: 2px solid #7c3aed;
+  outline: 2px solid var(--lw-accent-strong);
   outline-offset: -2px;
-  background: color-mix(in srgb, #ede9fe 42%, var(--lw-surface));
+  background: color-mix(in srgb, var(--lw-accent-soft) 42%, var(--lw-surface));
 }
 
 .leavewise-month-calendar__day-number {
@@ -1007,11 +1007,11 @@ textarea:focus-visible,
 
 .leavewise-month-calendar__day.is-today .leavewise-month-calendar__day-number time {
   color: #fff;
-  background: #7c3aed;
+  background: var(--lw-accent-strong);
 }
 
 .leavewise-month-calendar__day-number span {
-  color: #7c3aed;
+  color: var(--lw-accent-strong);
   font-size: 0.55rem;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1066,7 +1066,7 @@ textarea:focus-visible,
   box-shadow: 0 16px 42px rgba(1, 7, 18, 0.25);
 }
 :root[data-theme="dark"] .leavewise-month-calendar__day.is-today {
-  background: color-mix(in srgb, #312e81 34%, var(--lw-surface));
+  background: color-mix(in srgb, var(--lw-primary) 34%, var(--lw-surface));
 }
 :root[data-theme="dark"] .leavewise-month-calendar__event {
   color: #bfdbfe;
@@ -1174,7 +1174,7 @@ textarea:focus-visible,
   }
 }
 
-/* Indigo and violet visual language shared by both display modes. */
+/* Clean visual language aligned with the landing page design. */
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
@@ -1186,28 +1186,28 @@ textarea:focus-visible,
 .leavewise-login,
 .leavewise-loading {
   background:
-    radial-gradient(circle at 10% 12%, rgba(167, 139, 250, 0.16), transparent 31%),
-    radial-gradient(circle at 90% 86%, rgba(38, 36, 95, 0.13), transparent 34%),
-    linear-gradient(135deg, #eef2f9 0%, #fafbfe 52%, #edf1f8 100%);
+    radial-gradient(circle at 10% 12%, rgba(14, 170, 167, 0.08), transparent 31%),
+    radial-gradient(circle at 90% 86%, rgba(8, 127, 140, 0.07), transparent 34%),
+    linear-gradient(135deg, #f0f7f8 0%, #fafcfd 52%, #edf5f6 100%);
 }
 
-.leavewise-login-orb--one { background: rgba(167, 139, 250, 0.15); }
-.leavewise-login-orb--two { background: rgba(38, 36, 95, 0.1); }
+.leavewise-login-orb--one { background: rgba(14, 170, 167, 0.08); }
+.leavewise-login-orb--two { background: rgba(8, 127, 140, 0.06); }
 .leavewise-login-grid {
   background: var(--lw-surface);
   border-color: var(--lw-border);
-  box-shadow: 0 32px 86px rgba(14, 31, 59, 0.16);
+  box-shadow: 0 32px 86px rgba(8, 70, 95, 0.14);
 }
 .leavewise-brand-panel {
   background:
-    linear-gradient(rgba(167, 139, 250, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(167, 139, 250, 0.06) 1px, transparent 1px),
-    linear-gradient(150deg, #312e81 0%, #1e1b4b 100%);
+    linear-gradient(rgba(14, 170, 167, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(14, 170, 167, 0.045) 1px, transparent 1px),
+    linear-gradient(150deg, #062c3c 0%, #082f49 100%);
   background-size: 34px 34px, 34px 34px, auto;
 }
 .leavewise-brand-panel::after {
-  border-color: rgba(167, 139, 250, 0.22);
-  box-shadow: 0 0 0 34px rgba(167, 139, 250, 0.04), 0 0 0 70px rgba(167, 139, 250, 0.025);
+  border-color: rgba(14, 170, 167, 0.22);
+  box-shadow: 0 0 0 34px rgba(14, 170, 167, 0.04), 0 0 0 70px rgba(14, 170, 167, 0.025);
 }
 .leavewise-brand-copy { color: #d5dff0; }
 .leavewise-brand-points { color: #f2f5fc; }
@@ -1217,14 +1217,14 @@ textarea:focus-visible,
   box-shadow: var(--lw-shadow) !important;
 }
 .leavewise-auth-card > div:first-child { background: var(--lw-surface-soft) !important; }
-.leavewise-auth-card .bg-indigo-50 { background: var(--lw-accent-soft) !important; }
-.leavewise-auth-card .text-indigo-600 { color: var(--lw-accent-strong) !important; }
+.leavewise-auth-card .bg-teal-50 { background: var(--lw-accent-soft) !important; }
+.leavewise-auth-card .text-teal-700 { color: var(--lw-accent-strong) !important; }
 .leavewise-auth-card input:focus,
 .leavewise-auth-card select:focus,
 .leavewise-dashboard input:focus,
 .leavewise-dashboard select:focus,
 .leavewise-dashboard textarea:focus {
-  box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+  box-shadow: 0 0 0 4px rgba(14, 170, 167, 0.18);
 }
 .leavewise-app-shell {
   background:
@@ -1234,32 +1234,32 @@ textarea:focus-visible,
   background-size: 36px 36px;
 }
 .leavewise-topbar {
-  background: linear-gradient(110deg, #312e81 0%, #1e1b4b 100%) !important;
-  border-color: rgba(167, 139, 250, 0.32) !important;
-  box-shadow: 0 10px 30px rgba(13, 27, 53, 0.18) !important;
+  background: linear-gradient(110deg, #062c3c 0%, #082f49 100%) !important;
+  border-color: rgba(14, 170, 167, 0.28) !important;
+  box-shadow: 0 10px 30px rgba(8, 70, 95, 0.18) !important;
 }
 .leavewise-topbar .bg-slate-100 {
-  background: var(--lw-accent) !important;
-  color: #312e81 !important;
+  background: var(--lw-accent-soft) !important;
+  color: #062c3c !important;
 }
 .leavewise-topbar .bg-emerald-50\/60 {
-  background: rgba(167, 139, 250, 0.16) !important;
-  border-color: rgba(167, 139, 250, 0.45) !important;
+  background: rgba(14, 170, 167, 0.16) !important;
+  border-color: rgba(14, 170, 167, 0.35) !important;
   color: #e7fffb !important;
 }
 .leavewise-footer { background: var(--lw-surface) !important; }
 .leavewise-dashboard > .bg-white:first-of-type,
 .leavewise-page-heading {
-  background: linear-gradient(120deg, #312e81 0%, #7c3aed 100%) !important;
-  border-color: rgba(167, 139, 250, 0.24) !important;
-  box-shadow: 0 18px 44px rgba(13, 27, 53, 0.18) !important;
+  background: linear-gradient(120deg, #062c3c 0%, #087f8c 100%) !important;
+  border-color: rgba(14, 170, 167, 0.24) !important;
+  box-shadow: 0 18px 44px rgba(8, 70, 95, 0.18) !important;
 }
 .leavewise-dashboard > .bg-white:first-of-type::after,
-.leavewise-page-heading::after { border-color: rgba(167, 139, 250, 0.12); }
+.leavewise-page-heading::after { border-color: rgba(14, 170, 167, 0.12); }
 .leavewise-page-heading button {
   background: var(--lw-accent) !important;
   border-color: var(--lw-accent) !important;
-  color: #312e81 !important;
+  color: #062c3c !important;
 }
 .leavewise-dashboard .bg-slate-50,
 .leavewise-dashboard .bg-slate-50\/50,
@@ -1267,16 +1267,16 @@ textarea:focus-visible,
 .leavewise-dashboard .bg-slate-100 { background: #dce6f3 !important; }
 .leavewise-dashboard table thead {
   background: #e3eaf5;
-  color: #312e81;
+  color: #062c3c;
 }
-.leavewise-dashboard table tbody tr:hover { background: rgba(167, 139, 250, 0.09); }
+.leavewise-dashboard table tbody tr:hover { background: rgba(14, 170, 167, 0.06); }
 .leavewise-topbar [class*="w-80"] {
   background: var(--lw-surface) !important;
   color: var(--lw-text);
 }
 .leavewise-approval {
   background:
-    radial-gradient(circle at 12% 16%, rgba(167, 139, 250, 0.16), transparent 32%),
+    radial-gradient(circle at 12% 16%, rgba(14, 170, 167, 0.08), transparent 32%),
     var(--lw-canvas) !important;
   color: var(--lw-text);
 }
@@ -1286,13 +1286,13 @@ textarea:focus-visible,
   box-shadow: var(--lw-shadow) !important;
 }
 .leavewise-approval-header {
-  background: linear-gradient(120deg, #312e81, #1e1b4b) !important;
+  background: linear-gradient(120deg, #062c3c, #082f49) !important;
 }
 .leavewise-approval-header p { color: #9ef7e9 !important; }
-.leavewise-approval-login-link { background: #312e81 !important; }
-.leavewise-approval-login-link:hover { background: #1e1b4b !important; }
-.leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) { background: #4338ca !important; }
-.leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle):hover { background: #6d28d9 !important; }
+.leavewise-approval-login-link { background: #087f8c !important; }
+.leavewise-approval-login-link:hover { background: #066a75 !important; }
+.leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle) { background: #087f8c !important; }
+.leavewise-approval button:not([class*="bg-rose"]):not(.leavewise-theme-toggle):hover { background: #066a75 !important; }
 
 .leavewise-theme-toggle {
   display: inline-flex;
@@ -1545,7 +1545,7 @@ textarea:focus-visible,
 }
 .leavewise-page-heading button {
   background: var(--lw-accent) !important;
-  color: #312e81 !important;
+  color: #062c3c !important;
   transition: background-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
 }
 .leavewise-approval-emblem {

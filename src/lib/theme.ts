@@ -1,30 +1,18 @@
-export type Theme = "light" | "dark";
+export type Theme = "light";
 
 const COOKIE_NAME = "leavewise-theme";
 
-function savedTheme(): Theme | null {
-  const value = document.cookie.split(";").map((entry) => entry.trim()).find((entry) => entry.startsWith(`${COOKIE_NAME}=`))?.split("=")[1];
-  return value === "light" || value === "dark" ? value : null;
+export function currentTheme(): "light" {
+  return "light";
 }
 
-export function currentTheme(): Theme {
-  const remembered = savedTheme();
-  if (remembered) return remembered;
-  const applied = document.documentElement.dataset.theme;
-  if (applied === "light" || applied === "dark") return applied;
-  return "dark";
-}
-
-export function applyTheme(theme: Theme, remember = false): void {
-  document.documentElement.dataset.theme = theme;
-  document.documentElement.style.colorScheme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#08111f" : "#f5f7fc");
-  if (remember) {
-    // Authentication clears localStorage on startup, so keep this visual choice in a cookie.
-    document.cookie = `${COOKIE_NAME}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
-  }
+export function applyTheme(_theme?: string, _remember = false): void {
+  document.documentElement.dataset.theme = "light";
+  document.documentElement.style.colorScheme = "light";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", "#f8fafc");
+  document.cookie = `${COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
 export function initializeTheme(): void {
-  applyTheme(currentTheme());
+  applyTheme("light");
 }

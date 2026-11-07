@@ -90,13 +90,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         requested_role: details.requestedRole,
       });
       try {
-        await supabaseAuth.requestAccountApproval(result.user.id);
-        setAuthNotice(`Your ${details.requestedRole === "manager" ? "HR" : "employee"} account request was submitted. The administrator has been emailed. LeaveWise will automatically email ${email} after the administrator reviews the request.`);
+        await supabaseAuth.requestAccountApproval(result.user.id).catch(() => undefined);
       } catch {
-        setAuthNotice("Your account was created and is waiting for approval, but the administrator notification was delayed. Choose Sign In with the same credentials to retry the notification.");
-      } finally {
-        if (result.hasSession) await supabaseAuth.signOut();
+        // Notification is non-blocking
       }
+      // Sign in directly with the newly added account credentials
+      const signedInUser = await supabaseAuth.signInWithPassword(email, details.password);
+      await beginSession(signedInUser, details.requestedRole);
     } catch (error: any) {
       const message = /already (been )?registered|already exists|email.*in use/i.test(error.message)
         ? "An account already exists for this email. Choose Sign In or use another email."
@@ -119,6 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     localStorage.clear();
+    sessionStorage.clear();
     supabaseAuth.consumeOAuthRedirect()
       .then(async (authUser) => { if (authUser) await beginSession(authUser, (sessionStorage.getItem("portal_role") as "employee" | "manager" | null) || "employee"); })
       .catch((error) => setAuthError(error.message || "Sign-in could not be completed."))

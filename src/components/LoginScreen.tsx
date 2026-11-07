@@ -16,7 +16,6 @@ import {
   CheckCircle2
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo.tsx";
-import { ThemeToggle } from "./ThemeToggle.tsx";
 import { accountEmailHelp, accountEmailPattern } from "../lib/email-validation.ts";
 import { applicantPhoneHelp } from "../lib/phone-validation.ts";
 
@@ -122,7 +121,6 @@ export const LoginScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 relative overflow-hidden leavewise-login">
-      <ThemeToggle floating />
       
       {/* Decorative corporate ambient background glow */}
       <div className="leavewise-login-orb leavewise-login-orb--one" />
@@ -169,13 +167,13 @@ export const LoginScreen: React.FC = () => {
                 onClick={() => handleRoleChange("employee")}
                 className={`flex items-center space-x-3 p-3 rounded-xl border text-left transition-all duration-200 ${
                   activeRole === "employee"
-                    ? "bg-white border-indigo-500 shadow-sm ring-1 ring-indigo-500/20"
+                    ? "bg-white border-teal-600 shadow-sm ring-1 ring-teal-600/20"
                     : "bg-white/60 border-slate-200 hover:bg-white text-slate-600 hover:border-slate-300"
                 }`}
               >
                 <div className={`p-2 rounded-lg flex-shrink-0 transition-colors ${
                   activeRole === "employee" 
-                    ? "bg-indigo-50 text-indigo-600" 
+                    ? "bg-teal-50 text-teal-700" 
                     : "bg-slate-100 text-slate-500"
                 }`}>
                   <Users className="h-4 w-4" />
@@ -184,7 +182,7 @@ export const LoginScreen: React.FC = () => {
                   <div className="flex items-center space-x-1.5">
                     <span className="text-xs font-bold text-slate-900 block truncate">Employee Portal</span>
                     {activeRole === "employee" && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-600"></span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-teal-600"></span>
                     )}
                   </div>
                   <span className="text-[10px] text-slate-400 font-medium block truncate mt-0.5">
@@ -364,7 +362,7 @@ export const LoginScreen: React.FC = () => {
                   className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center space-x-2 transition-all duration-150 ${
                     activeRole === "manager"
                       ? "bg-slate-900 hover:bg-slate-800 hover:shadow-md"
-                      : "bg-indigo-600 hover:bg-indigo-700 hover:shadow-md"
+                      : "bg-[#087f8c] hover:bg-[#066a75] hover:shadow-md"
                   } disabled:opacity-50`}
                 >
                   <LogIn className="h-4 w-4" />
@@ -540,7 +538,7 @@ export const LoginScreen: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center space-x-2 transition-all duration-150 disabled:opacity-50 ${activeRole === "manager" ? "bg-slate-900 hover:bg-slate-800" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                  className={`w-full py-3 px-4 rounded-xl text-xs font-bold text-white shadow-sm flex items-center justify-center space-x-2 transition-all duration-150 disabled:opacity-50 ${activeRole === "manager" ? "bg-slate-900 hover:bg-slate-800" : "bg-[#087f8c] hover:bg-[#066a75]"}`}
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>

@@ -20,7 +20,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { ThemeToggle } from "./ThemeToggle.tsx";
 import "./LandingPage.css";
 
 const workflows = {
@@ -156,7 +155,6 @@ export const LandingPage: React.FC = () => {
             >
               {mobileMenuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
             </button>
-            <ThemeToggle />
             <a className="leavewise-landing__sign-in" href={appUrl("login")}>Sign in</a>
             <a className="leavewise-landing__get-started" href={appUrl("login?mode=signup")}>
               Get started <ArrowRight aria-hidden="true" />
